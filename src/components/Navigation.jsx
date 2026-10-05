@@ -7,10 +7,9 @@ import {
   Box,
   Typography,
   Badge,
-  useTheme,
-  useMediaQuery,
   BottomNavigation,
-  BottomNavigationAction
+  BottomNavigationAction,
+  Stack
 } from '@mui/material';
 import {
   ShoppingCart as CartIcon,
@@ -29,9 +28,6 @@ export default function Navigation() {
     customers
   } = useShop();
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   // Count customers who have pending balance
   const kadanCustomersCount = customers.filter(c => (c.balance || c.balanceOwed || 0) > 0).length;
 
@@ -39,6 +35,7 @@ export default function Navigation() {
     {
       id: 'billing',
       label: 'Categories & Bill',
+      shortLabel: 'Billing',
       tamilLabel: 'பிரிவுகள் & பில்',
       icon: <CartIcon />,
       badge: cartTotalItems > 0 ? cartTotalItems : null,
@@ -47,6 +44,7 @@ export default function Navigation() {
     {
       id: 'customers',
       label: 'Customer Kadan Book',
+      shortLabel: 'Kadan Book',
       tamilLabel: 'வாடிக்கையாளர் கடன்',
       icon: <UsersIcon />,
       badge: kadanCustomersCount > 0 ? kadanCustomersCount : null,
@@ -55,6 +53,7 @@ export default function Navigation() {
     {
       id: 'stock',
       label: 'Stock Nilavaram',
+      shortLabel: 'Stock',
       tamilLabel: 'சரக்கு இருப்பு',
       icon: <StockIcon />,
       badge: lowStockProducts.length > 0 ? lowStockProducts.length : null,
@@ -63,6 +62,7 @@ export default function Navigation() {
     {
       id: 'sales',
       label: 'Virpanai Kanakku',
+      shortLabel: 'Virpanai',
       tamilLabel: 'விற்பனை கணக்கு',
       icon: <SalesIcon />,
       badge: null
@@ -125,14 +125,14 @@ export default function Navigation() {
                   )
                 }
                 label={
-                  <Box sx={{ textAlign: 'left', ml: 0.5 }}>
-                    <Typography component="span" sx={{ display: 'block', fontWeight: 800, fontSize: '0.875rem', lineHeight: 1.2 }}>
+                  <Stack direction="column" spacing={0} alignItems="flex-start" sx={{ ml: 0.5 }}>
+                    <Typography component="span" sx={{ fontWeight: 800, fontSize: '0.875rem', lineHeight: 1.2 }}>
                       {tab.label}
                     </Typography>
-                    <Typography component="span" sx={{ display: 'block', fontSize: '0.7rem', color: 'text.secondary', lineHeight: 1.1 }}>
+                    <Typography component="span" sx={{ fontSize: '0.7rem', color: 'text.secondary', lineHeight: 1.1 }}>
                       {tab.tamilLabel}
                     </Typography>
-                  </Box>
+                  </Stack>
                 }
               />
             ))}
@@ -140,7 +140,7 @@ export default function Navigation() {
         </Box>
       </Paper>
 
-      {/* Mobile Bottom Fixed Navigation (App Experience) */}
+      {/* Mobile Bottom Fixed Navigation with Responsive Typography and No Overflow */}
       <Paper
         elevation={8}
         sx={{
@@ -148,9 +148,12 @@ export default function Navigation() {
           bottom: 0,
           left: 0,
           right: 0,
+          width: '100%',
+          maxWidth: '100vw',
           zIndex: 40,
           display: { xs: 'block', sm: 'none' },
-          borderTop: '1px solid #e2e8f0'
+          borderTop: '1px solid #e2e8f0',
+          overflow: 'hidden'
         }}
       >
         <BottomNavigation
@@ -158,15 +161,34 @@ export default function Navigation() {
           onChange={(e, val) => handleTabChange(val)}
           showLabels
           sx={{
-            height: 62,
+            height: 66,
+            width: '100%',
+            maxWidth: '100%',
             bgcolor: '#ffffff',
+            boxSizing: 'border-box',
             '& .MuiBottomNavigationAction-root': {
-              minWidth: 'auto',
-              px: 1,
-              py: 0.5,
+              minWidth: 0,
+              maxWidth: 'none',
+              flex: 1,
+              px: { xs: 0.5, sm: 1 },
+              py: 0.75,
+              overflow: 'hidden',
+              '& .MuiBottomNavigationAction-label': {
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
+                fontWeight: 700,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
+                mt: 0.4,
+                lineHeight: 1.2,
+                '&.Mui-selected': {
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
+                  fontWeight: 900
+                }
+              },
               '&.Mui-selected': {
-                color: 'primary.main',
-                '& .MuiTypography-root': { fontWeight: 800 }
+                color: 'primary.main'
               }
             }
           }}
@@ -175,14 +197,14 @@ export default function Navigation() {
             <BottomNavigationAction
               key={tab.id}
               value={tab.id}
-              label={
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, mt: 0.3 }}>
-                  {tab.label.split(' ')[0]}
-                </Typography>
-              }
+              label={tab.shortLabel}
               icon={
                 tab.badge ? (
-                  <Badge badgeContent={tab.badge} color={tab.badgeColor} sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+                  <Badge 
+                    badgeContent={tab.badge} 
+                    color={tab.badgeColor} 
+                    sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16, fontWeight: 900 } }}
+                  >
                     {tab.icon}
                   </Badge>
                 ) : (

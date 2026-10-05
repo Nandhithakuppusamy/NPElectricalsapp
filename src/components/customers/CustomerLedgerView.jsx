@@ -30,7 +30,8 @@ import {
   InputAdornment,
   Collapse,
   Tooltip,
-  Divider
+  Divider,
+  Stack
 } from '@mui/material';
 import {
   People as UsersIcon,
@@ -396,8 +397,219 @@ export default function CustomerLedgerView() {
             </Typography>
           </Paper>
         ) : (
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
-            <Table>
+          <Box>
+            {/* MOBILE VIEW: Customer Cards using Stack for clean alignment on mobile */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 2 }}>
+          {filteredCustomers.map((customer) => {
+            const balance = customer.balanceOwed !== undefined ? customer.balanceOwed : (customer.balance || 0);
+            const hasKadan = balance > 0;
+            const isExpanded = expandedCustId === customer.id;
+            const creditBills = customer.creditBills || customer.purchaseHistory?.filter(p => p.paymentType === 'Credit') || [];
+            const settledHistory = customer.settledHistory || customer.purchaseHistory?.filter(p => p.paymentType !== 'Credit') || [];
+
+            return (
+              <Card key={customer.id} sx={{ borderRadius: 3, border: hasKadan ? '1.5px solid #fecaca' : '1px solid #e2e8f0', p: 2 }}>
+                <Stack spacing={1.5}>
+                  {/* Customer Header: Avatar + Name + Contact + Edit */}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 2.5,
+                          bgcolor: hasKadan ? '#fee2e2' : '#d1fae5',
+                          color: hasKadan ? '#b91c1c' : '#047857',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                          fontSize: '1rem'
+                        }}
+                      >
+                        {customer.name.charAt(0).toUpperCase()}
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                          {customer.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <PhoneIcon sx={{ fontSize: 13 }} />
+                          {customer.phone || 'No phone'}
+                        </Typography>
+                      </Box>
+                    </Stack>
+
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setEditingCust(customer);
+                        setEditCustName(customer.name);
+                        setEditCustPhone(customer.phone !== '-' ? customer.phone : '');
+                        setEditCustAddress(customer.address !== '-' ? customer.address : '');
+                      }}
+                      sx={{ color: '#64748b', '&:hover': { bgcolor: '#f1f5f9' } }}
+                    >
+                      <EditIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Stack>
+
+                  {/* Address */}
+                  {customer.address && customer.address !== '-' && (
+                    <Typography variant="caption" sx={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LocationIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                      {customer.address}
+                    </Typography>
+                  )}
+
+                  <Divider />
+
+                  {/* Balance & Status */}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                        Balance Owed (பாக்கி)
+                      </Typography>
+                      <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: hasKadan ? '#dc2626' : '#059669' }}>
+                        ₹{balance.toLocaleString('en-IN')}
+                      </Typography>
+                    </Box>
+
+                    {hasKadan ? (
+                      <Chip label="Kadan Irukku" color="error" size="small" sx={{ fontWeight: 800, fontSize: '0.7rem' }} />
+                    ) : (
+                      <Chip label="Zero Balance" color="success" variant="outlined" size="small" sx={{ fontWeight: 700, fontSize: '0.7rem' }} />
+                    )}
+                  </Stack>
+
+                  {/* Action Buttons: Settle + Add Past Credit + Expand History */}
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ pt: 0.5 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      {hasKadan && (
+                        <Button
+                          variant="contained"
+                          color="success"
+                          size="small"
+                          onClick={() => handleOpenSettle(customer)}
+                          sx={{ borderRadius: 2, fontWeight: 800, fontSize: '0.75rem', px: 1.5, py: 0.5 }}
+                        >
+                          Panam Settle
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<AddCircleIcon sx={{ fontSize: 15 }} />}
+                        onClick={() => {
+                          setPastCreditModalCust(customer);
+                          setPastCreditDate(new Date().toISOString().slice(0, 10));
+                        }}
+                        sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.72rem', color: '#b45309', borderColor: '#fde68a', bgcolor: '#fffbeb', py: 0.5 }}
+                      >
+                        + Kadan Serka
+                      </Button>
+                    </Stack>
+
+                    <Button
+                      size="small"
+                      onClick={() => setExpandedCustId(isExpanded ? null : customer.id)}
+                      endIcon={isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      sx={{ fontSize: '0.75rem', fontWeight: 700 }}
+                    >
+                      History
+                    </Button>
+                  </Stack>
+
+                  {/* Mobile Expanded History Details */}
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <Box sx={{ pt: 1.5, borderTop: '1px solid #e2e8f0', mt: 1 }}>
+                      {/* Credit Purchases Section */}
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                        <CreditIcon sx={{ fontSize: 15 }} />
+                        Credit Purchases & Dates:
+                      </Typography>
+                      {creditBills.length === 0 ? (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                          Kadan bill yedhum illai.
+                        </Typography>
+                      ) : (
+                        <Stack spacing={0.8} sx={{ mb: 1.5 }}>
+                          {creditBills.map((cb, idx) => (
+                            <Paper key={idx} variant="outlined" sx={{ p: 1, borderRadius: 2, bgcolor: '#f8fafc' }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Chip
+                                    icon={<CalendarIcon sx={{ fontSize: '12px !important' }} />}
+                                    label={new Date(cb.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 800, fontSize: '0.65rem', height: 20 }}
+                                  />
+                                  <Typography variant="caption" sx={{ fontWeight: 600, color: '#334155', display: 'block', mt: 0.3 }}>
+                                    {cb.items || cb.itemsDescription || 'Hardware items'}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ textAlign: 'right' }}>
+                                  <Typography sx={{ fontWeight: 900, color: '#dc2626', fontSize: '0.85rem' }}>
+                                    ₹{(cb.amount || 0).toLocaleString('en-IN')}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ color: cb.status === 'SETTLED' ? '#059669' : '#dc2626', fontWeight: 700, fontSize: '0.65rem' }}>
+                                    {cb.status === 'SETTLED' ? 'Settled' : 'Pending'}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      )}
+
+                      {/* Settled History Section */}
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+                        <CheckIcon sx={{ fontSize: 15 }} />
+                        Settled History:
+                      </Typography>
+                      {settledHistory.length === 0 ? (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                          Settled history yedhum illai.
+                        </Typography>
+                      ) : (
+                        <Stack spacing={0.8}>
+                          {settledHistory.map((sh, idx) => (
+                            <Paper key={idx} variant="outlined" sx={{ p: 1, borderRadius: 2, bgcolor: '#f0fdf4' }}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Box>
+                                  <Chip
+                                    label={`${sh.paymentType || sh.paymentMode || 'Cash'} • ${new Date(sh.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 800, fontSize: '0.65rem', height: 20 }}
+                                  />
+                                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.3 }}>
+                                    {sh.notes || 'Payment received'}
+                                  </Typography>
+                                </Box>
+                                <Typography sx={{ fontWeight: 900, color: '#059669', fontSize: '0.85rem' }}>
+                                  ₹{(sh.amount || 0).toLocaleString('en-IN')}
+                                </Typography>
+                              </Stack>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      )}
+                    </Box>
+                  </Collapse>
+                </Stack>
+              </Card>
+            );
+          })}
+        </Box>
+
+        {/* DESKTOP/TABLET: Customer Table (Material UI Table) */}
+        <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' }, borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
+          <Table>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 800 }}>Customer Name & Contact</TableCell>
@@ -647,6 +859,7 @@ export default function CustomerLedgerView() {
               </TableBody>
             </Table>
           </TableContainer>
+          </Box>
         )}
 
         {/* DIALOG 1: Settle Customer Balance (Material UI Dialog) */}

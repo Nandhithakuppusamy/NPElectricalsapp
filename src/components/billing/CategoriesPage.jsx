@@ -20,7 +20,8 @@ import {
   Chip,
   Paper,
   Tooltip,
-  Divider
+  Divider,
+  Stack
 } from '@mui/material';
 import {
   Lightbulb as LightbulbIcon,
@@ -349,77 +350,81 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
 
                   {/* CardContent: Title, Bilingual labels, Description / Sizes info */}
                   <CardContent sx={{ p: 2.5, pb: 1.5, flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                        {cat.name}
-                      </Typography>
-                      {cat.tamilName && (
-                        <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                          ({cat.tamilName})
+                    <Stack direction="column" spacing={1.2}>
+                      <Stack direction="row" alignItems="baseline" spacing={1} flexWrap="wrap">
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                          {cat.name}
                         </Typography>
-                      )}
-                    </Box>
+                        {cat.tamilName && (
+                          <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                            ({cat.tamilName})
+                          </Typography>
+                        )}
+                      </Stack>
 
-                    {/* Sizes / Description Preview */}
-                    <Box sx={{ mt: 1.5, bgcolor: '#fef3c7', px: 1.2, py: 0.6, borderRadius: 2, border: '1px solid #fde68a' }}>
-                      <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 800, display: 'block' }}>
-                        Sizes / Inches:
-                      </Typography>
-                      <Typography sx={{ fontWeight: 600, color: '#78350f', fontSize: '0.75rem', lineHeight: 1.2, mt: 0.2 }}>
-                        {cat.sizesPreview || 'All sizes available'}
-                      </Typography>
-                    </Box>
+                      {/* Sizes / Description Preview */}
+                      <Box sx={{ bgcolor: '#fef3c7', px: 1.2, py: 0.6, borderRadius: 2, border: '1px solid #fde68a' }}>
+                        <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 800, display: 'block' }}>
+                          Sizes / Inches:
+                        </Typography>
+                        <Typography sx={{ fontWeight: 600, color: '#78350f', fontSize: '0.75rem', lineHeight: 1.2, mt: 0.2 }}>
+                          {cat.sizesPreview || 'All sizes available'}
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </CardContent>
 
                   <Divider sx={{ borderColor: '#f1f5f9' }} />
 
                   {/* CardActions: Shop Owner Controls (Edit/Delete) + View Button */}
-                  <CardActions sx={{ px: 2, py: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#fafafa' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                      {/* Shop Owner Edit Button */}
-                      <Tooltip title="Category Peyar / Padam Matra (Edit Category & Image)">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<EditIcon sx={{ fontSize: 15 }} />}
-                          onClick={(e) => handleOpenEdit(e, cat)}
-                          sx={{ 
-                            fontSize: '0.72rem', 
-                            fontWeight: 700, 
-                            borderRadius: 2,
-                            py: 0.4,
-                            px: 1.2,
-                            color: '#475569',
-                            borderColor: '#cbd5e1',
-                            bgcolor: '#ffffff',
-                            '&:hover': { bgcolor: '#eff6ff', borderColor: 'primary.main', color: 'primary.main' }
-                          }}
-                        >
-                          Edit
-                        </Button>
-                      </Tooltip>
+                  <CardActions sx={{ px: 2, py: 1.2, bgcolor: '#fafafa' }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+                      <Stack direction="row" alignItems="center" spacing={0.8}>
+                        {/* Shop Owner Edit Button */}
+                        <Tooltip title="Category Peyar / Padam Matra (Edit Category & Image)">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<EditIcon sx={{ fontSize: 15 }} />}
+                            onClick={(e) => handleOpenEdit(e, cat)}
+                            sx={{ 
+                              fontSize: '0.72rem', 
+                              fontWeight: 700, 
+                              borderRadius: 2,
+                              py: 0.4,
+                              px: 1.2,
+                              color: '#475569',
+                              borderColor: '#cbd5e1',
+                              bgcolor: '#ffffff',
+                              '&:hover': { bgcolor: '#eff6ff', borderColor: 'primary.main', color: 'primary.main' }
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </Tooltip>
 
-                      {/* Shop Owner Delete Button */}
-                      <Tooltip title="Category-ai Neekka (Delete)">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleDelete(e, cat)}
-                          sx={{ color: '#64748b', bgcolor: '#ffffff', border: '1px solid #e2e8f0', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
-                        >
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
+                        {/* Shop Owner Delete Button */}
+                        <Tooltip title="Category-ai Neekka (Delete)">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleDelete(e, cat)}
+                            sx={{ color: '#64748b', bgcolor: '#ffffff', border: '1px solid #e2e8f0', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
+                          >
+                            <DeleteIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
 
-                    {/* View Products Button */}
-                    <Button
-                      size="small"
-                      color="primary"
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
-                      sx={{ fontWeight: 800, fontSize: '0.75rem', borderRadius: 2 }}
-                    >
-                      View
-                    </Button>
+                      {/* View Products Button */}
+                      <Button
+                        size="small"
+                        color="primary"
+                        endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
+                        sx={{ fontWeight: 800, fontSize: '0.75rem', borderRadius: 2 }}
+                      >
+                        View
+                      </Button>
+                    </Stack>
                   </CardActions>
                 </Card>
               </Grid>
@@ -478,67 +483,86 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
                 size="small"
               />
 
-              {/* IMAGE UPLOAD SECTION */}
-              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc' }}>
+              {/* IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                  Category Padam / Image Upload (Optional)
+                  Category Padam / Image Upload (Device Gallery / Files)
                 </Typography>
                 
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 2, mt: 1.5 }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mt: 1 }}>
                   {/* File Upload Button */}
                   <Button
                     variant="outlined"
                     component="label"
                     startIcon={<CloudUploadIcon />}
-                    sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                    sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', bgcolor: '#ffffff', borderColor: '#94a3b8' }}
                   >
-                    Upload Image File
+                    📷 Gallery / Files-il irundhu Padam Select Pannu
                     <input
                       type="file"
                       hidden
-                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      accept="image/*"
                       onChange={handleAddFileChange}
                     />
                   </Button>
 
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    or enter image URL below:
-                  </Typography>
-                </Box>
+                  {newCatImageFile && (
+                    <Chip
+                      label={newCatImageFile.name}
+                      onDelete={() => {
+                        setNewCatImageFile(null);
+                        setNewCatImagePreview('');
+                      }}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 700 }}
+                    />
+                  )}
+                </Stack>
 
-                <TextField
-                  fullWidth
-                  label="Direct Image URL (Optional)"
-                  placeholder="https://example.com/image.jpg"
-                  value={newCatImageUrl}
-                  onChange={(e) => {
-                    setNewCatImageUrl(e.target.value);
-                    if (!newCatImageFile) setNewCatImagePreview(e.target.value);
-                  }}
-                  size="small"
-                  sx={{ mt: 1.5 }}
-                />
-
-                {/* Preview Box */}
-                {newCatImagePreview && (
-                  <Box sx={{ mt: 2, textAlign: 'center' }}>
-                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                      Selected Image Preview:
-                    </Typography>
+                {/* Selected Image Preview with Remove Button */}
+                {newCatImagePreview ? (
+                  <Box sx={{ mt: 2, position: 'relative', width: '100%', maxHeight: 180, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                     <Box
                       component="img"
                       src={newCatImagePreview}
-                      alt="Preview"
+                      alt="Selected Category Preview"
                       sx={{
                         width: '100%',
-                        maxHeight: 140,
+                        maxHeight: 180,
                         objectFit: 'cover',
-                        borderRadius: 2,
-                        border: '1px solid #cbd5e1'
+                        display: 'block'
                       }}
                     />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="error"
+                      startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+                      onClick={() => {
+                        setNewCatImageFile(null);
+                        setNewCatImagePreview('');
+                      }}
+                      sx={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 8,
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        py: 0.3,
+                        px: 1,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(220, 38, 38, 0.9)'
+                      }}
+                    >
+                      Padam Neekka (Remove)
+                    </Button>
                   </Box>
+                ) : (
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>
+                    Padam select seiyyavillai endral default category padam thaan kaattum.
+                  </Typography>
                 )}
               </Paper>
 
@@ -604,64 +628,81 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
                   size="small"
                 />
 
-                {/* EDIT IMAGE UPLOAD SECTION */}
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc' }}>
+                {/* EDIT IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                    Category Padam / Image Matra (Change Image)
+                    Category Padam Matra (Change Image from Gallery / Files)
                   </Typography>
 
-                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 2, mt: 1.5 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mt: 1 }}>
                     <Button
                       variant="outlined"
                       component="label"
                       startIcon={<CloudUploadIcon />}
-                      sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                      sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', bgcolor: '#ffffff', borderColor: '#94a3b8' }}
                     >
-                      Pudhu Padam Upload Pannu
+                      📷 Pudhu Padam Select Pannu (Gallery / Files)
                       <input
                         type="file"
                         hidden
-                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        accept="image/*"
                         onChange={handleEditFileChange}
                       />
                     </Button>
 
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      or change image URL:
-                    </Typography>
-                  </Box>
-
-                  <TextField
-                    fullWidth
-                    label="Image URL"
-                    value={editImageUrl}
-                    onChange={(e) => {
-                      setEditImageUrl(e.target.value);
-                      if (!editImageFile) setEditImagePreview(e.target.value);
-                    }}
-                    size="small"
-                    sx={{ mt: 1.5 }}
-                  />
+                    {editImageFile && (
+                      <Chip
+                        label={editImageFile.name}
+                        onDelete={() => {
+                          setEditImageFile(null);
+                          setEditImagePreview(editingCategory.imageUrl || getCategoryDefaultImage(editingCategory.id));
+                        }}
+                        color="primary"
+                        size="small"
+                        sx={{ fontWeight: 700 }}
+                      />
+                    )}
+                  </Stack>
 
                   {/* Preview */}
                   {editImagePreview && (
-                    <Box sx={{ mt: 2, textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                        Image Preview:
-                      </Typography>
+                    <Box sx={{ mt: 2, position: 'relative', width: '100%', maxHeight: 180, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                       <Box
                         component="img"
                         src={editImagePreview}
-                        alt="Preview"
+                        alt="Category Preview"
                         sx={{
                           width: '100%',
-                          maxHeight: 140,
+                          maxHeight: 180,
                           objectFit: 'cover',
-                          borderRadius: 2,
-                          border: '1px solid #cbd5e1'
+                          display: 'block'
                         }}
                       />
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="error"
+                        startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
+                        onClick={() => {
+                          setEditImageFile(null);
+                          setEditImageUrl('');
+                          setEditImagePreview('');
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          py: 0.3,
+                          px: 1,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(220, 38, 38, 0.9)'
+                        }}
+                      >
+                        Padam Neekka (Remove)
+                      </Button>
                     </Box>
                   )}
                 </Paper>

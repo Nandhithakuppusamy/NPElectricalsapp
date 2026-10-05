@@ -32,7 +32,9 @@ import {
   InputAdornment,
   Tooltip,
   ButtonGroup,
-  Avatar
+  Avatar,
+  Stack,
+  Divider
 } from '@mui/material';
 import {
   Inventory2 as StockIcon,
@@ -315,8 +317,123 @@ export default function StockManagementView() {
           ))}
         </Box>
 
-        {/* Products Stock Table with Product Avatar / Image */}
-        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
+        {/* MOBILE VIEW: Product Cards using Stack for clean alignment on mobile */}
+        <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 2 }}>
+          {filteredProducts.map((product) => {
+            const currentStock = product.stock ?? product.stockCount ?? 0;
+            const isLow = currentStock <= (product.lowStockAlert || 5);
+            const isZero = currentStock <= 0;
+            const displayImg = product.imageUrl || getProductDefaultImage(product, product.category || product.categoryId);
+
+            return (
+              <Card key={product.id} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', p: 2 }}>
+                <Stack spacing={1.5}>
+                  {/* Top: Image + Title + Category + Edit/Delete */}
+                  <Stack direction="row" spacing={1.5} alignItems="center" justifyContent="space-between">
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Avatar
+                        variant="rounded"
+                        src={displayImg}
+                        alt={product.name}
+                        sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: '#f1f5f9', border: '1px solid #e2e8f0' }}
+                        imgProps={{
+                          onError: (e) => { e.target.src = getProductDefaultImage(product, product.category || product.categoryId); }
+                        }}
+                      />
+                      <Box>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                          {product.name}
+                        </Typography>
+                        <Stack direction="row" spacing={0.8} alignItems="center" sx={{ mt: 0.3 }}>
+                          <Chip
+                            label={product.size}
+                            size="small"
+                            sx={{ fontWeight: 800, bgcolor: '#fef3c7', color: '#92400e', fontSize: '0.68rem', height: 20 }}
+                          />
+                          <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+                            {(product.category || product.categoryId || '').replace('_', ' ')}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    </Stack>
+
+                    <Stack direction="row" spacing={0.5}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenEdit(product)}
+                        sx={{ color: '#64748b', '&:hover': { color: 'primary.main', bgcolor: '#eff6ff' } }}
+                      >
+                        <EditIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          if (window.confirm(`"${product.name}"-ai neekka venduma?`)) {
+                            deleteProduct(product.id);
+                          }
+                        }}
+                        sx={{ color: '#64748b', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
+                      >
+                        <DeleteIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+
+                  <Divider />
+
+                  {/* Middle: Price & Current Stock + Status */}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Vilai</Typography>
+                      <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem' }}>
+                        ₹{product.price.toLocaleString('en-IN')}
+                      </Typography>
+                    </Box>
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Box sx={{ textAlign: 'center' }}>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Stock</Typography>
+                        <TextField
+                          type="number"
+                          size="small"
+                          value={currentStock}
+                          onChange={(e) => updateProductStock(product.id, e.target.value)}
+                          inputProps={{ min: 0, style: { textAlign: 'center', fontWeight: 900, width: 44, padding: '3px 4px' } }}
+                          sx={{
+                            bgcolor: isLow ? '#fee2e2' : '#f8fafc',
+                            borderRadius: 1.5,
+                            '& fieldset': { borderColor: isLow ? '#f87171' : '#cbd5e1' }
+                          }}
+                        />
+                      </Box>
+
+                      {isZero ? (
+                        <Chip label="Stock Illai" color="error" size="small" sx={{ fontWeight: 800, fontSize: '0.65rem' }} />
+                      ) : isLow ? (
+                        <Chip label="Low Stock" color="warning" size="small" sx={{ fontWeight: 800, fontSize: '0.65rem' }} />
+                      ) : (
+                        <Chip label="OK" color="success" variant="outlined" size="small" sx={{ fontWeight: 700, fontSize: '0.65rem' }} />
+                      )}
+                    </Stack>
+                  </Stack>
+
+                  {/* Bottom: Quick Restock Buttons */}
+                  <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ pt: 0.5 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>Quick Restock:</Typography>
+                    <ButtonGroup size="small" variant="outlined">
+                      <Button onClick={() => quickAddStock(product.id, 5)} sx={{ fontWeight: 800, fontSize: '0.72rem', py: 0.3 }}>+5</Button>
+                      <Button onClick={() => quickAddStock(product.id, 10)} sx={{ fontWeight: 800, fontSize: '0.72rem', py: 0.3 }}>+10</Button>
+                      <Button onClick={() => quickAddStock(product.id, 25)} variant="contained" sx={{ fontWeight: 800, fontSize: '0.72rem', py: 0.3 }}>+25</Button>
+                    </ButtonGroup>
+                  </Stack>
+                </Stack>
+              </Card>
+            );
+          })}
+        </Box>
+
+        {/* DESKTOP/TABLET: Products Stock Table with Product Avatar / Image */}
+        <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' }, borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
           <Table>
             <TableHead>
               <TableRow sx={{ bgcolor: '#f8fafc' }}>
@@ -579,14 +696,14 @@ export default function StockManagementView() {
                 </Grid>
               </Grid>
 
-              {/* IMAGE UPLOAD & IMAGE URL SECTION */}
-              <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
-                  Product Padam / Image (Real Photo)
+              {/* IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+              <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1.5px dashed #cbd5e1' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                  Product Padam / Image Upload (Device Gallery / Files)
                 </Typography>
                 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }}>
                   <Button
                     component="label"
                     variant="outlined"
@@ -596,14 +713,15 @@ export default function StockManagementView() {
                       fontWeight: 700,
                       fontSize: '0.8rem',
                       borderColor: '#94a3b8',
+                      bgcolor: '#ffffff',
                       color: '#1e293b'
                     }}
                   >
-                    Padam Upload Pannu (Choose File)
+                    📷 Gallery / Files-il irundhu Padam Select Pannu
                     <input
                       type="file"
                       hidden
-                      accept="image/png,image/jpeg,image/webp"
+                      accept="image/*"
                       onChange={handleAddFileChange}
                     />
                   </Button>
@@ -620,23 +738,11 @@ export default function StockManagementView() {
                       sx={{ fontWeight: 700 }}
                     />
                   )}
-                </Box>
+                </Stack>
 
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Alladhu Padam URL Link (Web URL)"
-                  placeholder="https://images.unsplash.com/..."
-                  value={formData.imageUrl}
-                  onChange={(e) => {
-                    setFormData({ ...formData, imageUrl: e.target.value });
-                    if (!addImgFile) setAddImgPreview(e.target.value);
-                  }}
-                />
-
-                {/* Live Preview Box */}
-                {addImgPreview && (
-                  <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                {/* Live Preview Box with Remove Action */}
+                {addImgPreview ? (
+                  <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 160, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                     <Box
                       component="img"
                       src={addImgPreview}
@@ -644,8 +750,11 @@ export default function StockManagementView() {
                       sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
-                    <IconButton
+                    <Button
                       size="small"
+                      variant="contained"
+                      color="error"
+                      startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
                       onClick={() => {
                         setAddImgFile(null);
                         setFormData({ ...formData, imageUrl: '' });
@@ -653,16 +762,23 @@ export default function StockManagementView() {
                       }}
                       sx={{
                         position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        bgcolor: 'rgba(0,0,0,0.65)',
-                        color: '#ffffff',
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                        top: 8,
+                        right: 8,
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        py: 0.3,
+                        px: 1,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(220, 38, 38, 0.9)'
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
+                      Padam Neekka (Remove)
+                    </Button>
                   </Box>
+                ) : (
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                    Padam select seiyyavillai endral standard product padam use aagum.
+                  </Typography>
                 )}
               </Box>
 
@@ -751,14 +867,14 @@ export default function StockManagementView() {
                   size="small"
                 />
 
-                {/* EDIT IMAGE UPLOAD & IMAGE URL SECTION */}
-                <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
-                    Product Padam Matra (Change Photo)
+                {/* EDIT IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+                <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1.5px dashed #cbd5e1' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                    Product Padam Matra (Change Photo from Gallery / Files)
                   </Typography>
 
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }}>
                     <Button
                       component="label"
                       variant="outlined"
@@ -768,14 +884,15 @@ export default function StockManagementView() {
                         fontWeight: 700,
                         fontSize: '0.8rem',
                         borderColor: '#94a3b8',
+                        bgcolor: '#ffffff',
                         color: '#1e293b'
                       }}
                     >
-                      Pudhu Padam Upload (Choose File)
+                      📷 Pudhu Padam Select Pannu (Gallery / Files)
                       <input
                         type="file"
                         hidden
-                        accept="image/png,image/jpeg,image/webp"
+                        accept="image/*"
                         onChange={handleEditFileChange}
                       />
                     </Button>
@@ -792,23 +909,11 @@ export default function StockManagementView() {
                         sx={{ fontWeight: 700 }}
                       />
                     )}
-                  </Box>
+                  </Stack>
 
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Padam URL Link"
-                    placeholder="https://images.unsplash.com/..."
-                    value={editingProduct.imageUrl || ''}
-                    onChange={(e) => {
-                      setEditingProduct({ ...editingProduct, imageUrl: e.target.value });
-                      if (!editImgFile) setEditImgPreview(e.target.value);
-                    }}
-                  />
-
-                  {/* Preview Box */}
+                  {/* Preview Box with Remove Action */}
                   {editImgPreview && (
-                    <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                    <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 160, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                       <Box
                         component="img"
                         src={editImgPreview}
@@ -816,8 +921,11 @@ export default function StockManagementView() {
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
-                      <IconButton
+                      <Button
                         size="small"
+                        variant="contained"
+                        color="error"
+                        startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
                         onClick={() => {
                           setEditImgFile(null);
                           setEditingProduct({ ...editingProduct, imageUrl: '' });
@@ -825,15 +933,18 @@ export default function StockManagementView() {
                         }}
                         sx={{
                           position: 'absolute',
-                          top: 6,
-                          right: 6,
-                          bgcolor: 'rgba(0,0,0,0.65)',
-                          color: '#ffffff',
-                          '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                          top: 8,
+                          right: 8,
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          py: 0.3,
+                          px: 1,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(220, 38, 38, 0.9)'
                         }}
                       >
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
+                        Padam Neekka (Remove)
+                      </Button>
                     </Box>
                   )}
                 </Box>

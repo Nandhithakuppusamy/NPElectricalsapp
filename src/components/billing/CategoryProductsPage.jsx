@@ -27,7 +27,8 @@ import {
   InputLabel,
   Select,
   Tooltip,
-  Divider
+  Divider,
+  Stack
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -463,112 +464,114 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
 
                     {/* Card Content: Title, Size / Inches info, Shop owner edit/delete */}
                     <CardContent sx={{ p: 2.5, pb: 1.5, flexGrow: 1 }}>
-                      
-                      {/* Product Title and Owner action icons */}
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.3, fontSize: '1rem' }}>
-                          {product.name}
-                        </Typography>
+                      <Stack direction="column" spacing={1.5}>
+                        {/* Product Title and Owner action icons */}
+                        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
+                          <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.3, fontSize: '1rem' }}>
+                            {product.name}
+                          </Typography>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-                          <Tooltip title="Product Vivaram & Padam Matra (Edit)">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenEditProduct(product)}
-                              sx={{ color: '#64748b', '&:hover': { color: 'primary.main', bgcolor: '#eff6ff' } }}
-                            >
-                              <EditIcon sx={{ fontSize: 17 }} />
-                            </IconButton>
-                          </Tooltip>
+                          <Stack direction="row" alignItems="center" spacing={0.5} flexShrink={0}>
+                            <Tooltip title="Product Vivaram & Padam Matra (Edit)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenEditProduct(product)}
+                                sx={{ color: '#64748b', '&:hover': { color: 'primary.main', bgcolor: '#eff6ff' } }}
+                              >
+                                <EditIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
 
-                          <Tooltip title="Product-ai Neekka (Delete)">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteProduct(product)}
-                              sx={{ color: '#64748b', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 17 }} />
-                            </IconButton>
-                          </Tooltip>
+                            <Tooltip title="Product-ai Neekka (Delete)">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteProduct(product)}
+                                sx={{ color: '#64748b', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
+                              >
+                                <DeleteIcon sx={{ fontSize: 17 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Stack>
+
+                        {/* SIZE / INCHES HIGHLIGHT */}
+                        <Box sx={{ bgcolor: '#fffbeb', border: '1px solid #fde68a', p: 1, px: 1.5, borderRadius: 2, display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                          <TagIcon sx={{ fontSize: 16, color: '#d97706' }} />
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: '#92400e' }}>
+                            Size / Inches: <Typography component="span" sx={{ fontWeight: 900, color: '#78350f', fontSize: '0.82rem' }}>{product.size}</Typography>
+                          </Typography>
                         </Box>
-                      </Box>
-
-                      {/* SIZE / INCHES HIGHLIGHT */}
-                      <Box sx={{ bgcolor: '#fffbeb', border: '1px solid #fde68a', p: 1, px: 1.5, borderRadius: 2, display: 'inline-flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <TagIcon sx={{ fontSize: 16, color: '#d97706' }} />
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: '#92400e' }}>
-                          Size / Inches: <Typography component="span" sx={{ fontWeight: 900, color: '#78350f', fontSize: '0.82rem' }}>{product.size}</Typography>
-                        </Typography>
-                      </Box>
-
+                      </Stack>
                     </CardContent>
 
                     <Divider sx={{ borderColor: '#f1f5f9' }} />
 
                     {/* Card Actions: Vilai (Rate) & Add to Bill / Qty Counter */}
-                    <CardActions sx={{ p: 2, px: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#fafafa' }}>
-                      <Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1 }}>
-                          Vilai (Rate)
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', mt: 0.3, fontSize: '1.25rem' }}>
-                          ₹{product.price.toLocaleString('en-IN')}
-                        </Typography>
-                      </Box>
+                    <CardActions sx={{ p: 2, px: 2.5, bgcolor: '#fafafa' }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+                        <Stack direction="column" spacing={0.3}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1 }}>
+                            Vilai (Rate)
+                          </Typography>
+                          <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.25rem' }}>
+                            ₹{product.price.toLocaleString('en-IN')}
+                          </Typography>
+                        </Stack>
 
-                      {/* Cart Add / Quantity Selector */}
-                      <Box>
-                        {inCartQty > 0 ? (
-                          <Paper
-                            elevation={0}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              bgcolor: 'primary.light',
-                              border: '1px solid #93c5fd',
-                              borderRadius: 2.5,
-                              p: 0.3
-                            }}
-                          >
-                            <IconButton
-                              size="small"
-                              onClick={() => updateCartQty(product.id, inCartQty - 1)}
-                              sx={{ bgcolor: '#ffffff', color: 'primary.dark', p: 0.5, '&:hover': { bgcolor: '#f1f5f9' } }}
+                        {/* Cart Add / Quantity Selector */}
+                        <Box>
+                          {inCartQty > 0 ? (
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                bgcolor: 'primary.light',
+                                border: '1px solid #93c5fd',
+                                borderRadius: 2.5,
+                                p: 0.3
+                              }}
                             >
-                              <RemoveIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                            <Typography sx={{ width: 32, textAlign: 'center', fontWeight: 900, fontSize: '0.9rem', color: '#1e3a8a' }}>
-                              {inCartQty}
-                            </Typography>
-                            <IconButton
-                              size="small"
+                              <IconButton
+                                size="small"
+                                onClick={() => updateCartQty(product.id, inCartQty - 1)}
+                                sx={{ bgcolor: '#ffffff', color: 'primary.dark', p: 0.5, '&:hover': { bgcolor: '#f1f5f9' } }}
+                              >
+                                <RemoveIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                              <Typography sx={{ width: 32, textAlign: 'center', fontWeight: 900, fontSize: '0.9rem', color: '#1e3a8a' }}>
+                                {inCartQty}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => addToCart(product, 1)}
+                                disabled={currentStock <= inCartQty}
+                                sx={{ bgcolor: 'primary.main', color: '#ffffff', p: 0.5, '&:hover': { bgcolor: 'primary.dark' } }}
+                              >
+                                <AddIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Paper>
+                          ) : (
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              startIcon={<AddIcon />}
+                              disabled={isOutOfStock}
                               onClick={() => addToCart(product, 1)}
-                              disabled={currentStock <= inCartQty}
-                              sx={{ bgcolor: 'primary.main', color: '#ffffff', p: 0.5, '&:hover': { bgcolor: 'primary.dark' } }}
+                              sx={{
+                                borderRadius: 2.5,
+                                fontWeight: 800,
+                                fontSize: '0.8rem',
+                                px: 2,
+                                py: 0.8,
+                                boxShadow: 'none'
+                              }}
                             >
-                              <AddIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Paper>
-                        ) : (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<AddIcon />}
-                            disabled={isOutOfStock}
-                            onClick={() => addToCart(product, 1)}
-                            sx={{
-                              borderRadius: 2.5,
-                              fontWeight: 800,
-                              fontSize: '0.8rem',
-                              px: 2,
-                              py: 0.8,
-                              boxShadow: 'none'
-                            }}
-                          >
-                            + Bill-la Serka
-                          </Button>
-                        )}
-                      </Box>
+                              + Bill-la Serka
+                            </Button>
+                          )}
+                        </Box>
+                      </Stack>
                     </CardActions>
                   </Card>
                 </Grid>
@@ -673,14 +676,14 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                 </Grid>
               </Grid>
 
-              {/* IMAGE UPLOAD & IMAGE URL SECTION */}
-              <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
-                  Product Padam / Image (Real Photo)
+              {/* IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+              <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1.5px dashed #cbd5e1' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                  Product Padam / Image Upload (Device Gallery / Files)
                 </Typography>
                 
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }}>
                   <Button
                     component="label"
                     variant="outlined"
@@ -690,14 +693,15 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                       fontWeight: 700,
                       fontSize: '0.8rem',
                       borderColor: '#94a3b8',
+                      bgcolor: '#ffffff',
                       color: '#1e293b'
                     }}
                   >
-                    Padam Upload Pannu (Choose File)
+                    📷 Gallery / Files-il irundhu Padam Select Pannu
                     <input
                       type="file"
                       hidden
-                      accept="image/png,image/jpeg,image/webp"
+                      accept="image/*"
                       onChange={handleAddFileChange}
                     />
                   </Button>
@@ -714,24 +718,11 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                       sx={{ fontWeight: 700 }}
                     />
                   )}
-                </Box>
+                </Stack>
 
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Alladhu Padam URL Link (Unsplash / Web URL)"
-                  placeholder="https://images.unsplash.com/..."
-                  value={newProdImageUrl}
-                  onChange={(e) => {
-                    setNewProdImageUrl(e.target.value);
-                    if (!newProdImageFile) setNewProdImagePreview(e.target.value);
-                  }}
-                  helperText="Device file upload alladhu direct image link renderil ondrai select pannalam."
-                />
-
-                {/* Live Preview Box */}
-                {newProdImagePreview && (
-                  <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                {/* Live Preview Box with Remove Action */}
+                {newProdImagePreview ? (
+                  <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 160, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                     <Box
                       component="img"
                       src={newProdImagePreview}
@@ -739,8 +730,11 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                       sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
-                    <IconButton
+                    <Button
                       size="small"
+                      variant="contained"
+                      color="error"
+                      startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
                       onClick={() => {
                         setNewProdImageFile(null);
                         setNewProdImageUrl('');
@@ -748,16 +742,23 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                       }}
                       sx={{
                         position: 'absolute',
-                        top: 6,
-                        right: 6,
-                        bgcolor: 'rgba(0,0,0,0.65)',
-                        color: '#ffffff',
-                        '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                        top: 8,
+                        right: 8,
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        py: 0.3,
+                        px: 1,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(220, 38, 38, 0.9)'
                       }}
                     >
-                      <CloseIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
+                      Padam Neekka (Remove)
+                    </Button>
                   </Box>
+                ) : (
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                    Padam select seiyyavillai endral standard product padam use aagum.
+                  </Typography>
                 )}
               </Box>
 
@@ -868,14 +869,14 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                   </Grid>
                 </Grid>
 
-                {/* EDIT IMAGE UPLOAD & IMAGE URL SECTION */}
-                <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
-                    Product Padam Matra (Change Image / Photo)
+                {/* EDIT IMAGE UPLOAD SECTION (DEVICE GALLERY / FILE PICKER ONLY) */}
+                <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1.5px dashed #cbd5e1' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                    Product Padam Matra (Change Photo from Gallery / Files)
                   </Typography>
 
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" sx={{ mb: 1.5 }}>
                     <Button
                       component="label"
                       variant="outlined"
@@ -885,14 +886,15 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                         fontWeight: 700,
                         fontSize: '0.8rem',
                         borderColor: '#94a3b8',
+                        bgcolor: '#ffffff',
                         color: '#1e293b'
                       }}
                     >
-                      Pudhu Padam Upload (Choose File)
+                      📷 Pudhu Padam Select Pannu (Gallery / Files)
                       <input
                         type="file"
                         hidden
-                        accept="image/png,image/jpeg,image/webp"
+                        accept="image/*"
                         onChange={handleEditFileChange}
                       />
                     </Button>
@@ -909,23 +911,11 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                         sx={{ fontWeight: 700 }}
                       />
                     )}
-                  </Box>
+                  </Stack>
 
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Padam URL Link"
-                    placeholder="https://images.unsplash.com/..."
-                    value={editProdImageUrl}
-                    onChange={(e) => {
-                      setEditProdImageUrl(e.target.value);
-                      if (!editProdImageFile) setEditProdImagePreview(e.target.value);
-                    }}
-                  />
-
-                  {/* Preview Box */}
+                  {/* Preview Box with Remove Action */}
                   {editProdImagePreview && (
-                    <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                    <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 160, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
                       <Box
                         component="img"
                         src={editProdImagePreview}
@@ -933,8 +923,11 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                         sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
-                      <IconButton
+                      <Button
                         size="small"
+                        variant="contained"
+                        color="error"
+                        startIcon={<CloseIcon sx={{ fontSize: 14 }} />}
                         onClick={() => {
                           setEditProdImageFile(null);
                           setEditProdImageUrl('');
@@ -942,15 +935,18 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
                         }}
                         sx={{
                           position: 'absolute',
-                          top: 6,
-                          right: 6,
-                          bgcolor: 'rgba(0,0,0,0.65)',
-                          color: '#ffffff',
-                          '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                          top: 8,
+                          right: 8,
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          py: 0.3,
+                          px: 1,
+                          borderRadius: 2,
+                          bgcolor: 'rgba(220, 38, 38, 0.9)'
                         }}
                       >
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
+                        Padam Neekka (Remove)
+                      </Button>
                     </Box>
                   )}
                 </Box>

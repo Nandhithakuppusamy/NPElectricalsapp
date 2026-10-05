@@ -19,7 +19,9 @@ import {
   Chip,
   TextField,
   InputAdornment,
-  Tooltip
+  Tooltip,
+  Stack,
+  Divider
 } from '@mui/material';
 import {
   QueryStats as SalesIcon,
@@ -282,8 +284,93 @@ export default function SalesHistoryView() {
             </Typography>
           </Paper>
         ) : (
-          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
-            <Table>
+          <Box>
+            {/* MOBILE VIEW: Sales Bill Cards using Stack for clean alignment on mobile */}
+            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 2 }}>
+              {filteredBills.map((bill) => {
+                const isCredit = bill.paymentMode === 'Credit';
+                const dateStr = new Date(bill.date).toLocaleString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+
+                return (
+                  <Card key={bill.id} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', p: 2 }}>
+                    <Stack spacing={1.5}>
+                      {/* Top: Bill ID + Payment Mode Chip + Status */}
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Box>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                            {bill.id}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {dateStr}
+                          </Typography>
+                        </Box>
+
+                        <Stack direction="row" spacing={0.8} alignItems="center">
+                          <Chip
+                            icon={
+                              bill.paymentMode === 'Cash' ? <CashIcon sx={{ fontSize: '13px !important' }} /> :
+                              bill.paymentMode === 'UPI' ? <UpiIcon sx={{ fontSize: '13px !important' }} /> :
+                              <CreditIcon sx={{ fontSize: '13px !important' }} />
+                            }
+                            label={bill.paymentMode}
+                            color={bill.paymentMode === 'Cash' ? 'success' : bill.paymentMode === 'UPI' ? 'primary' : 'error'}
+                            size="small"
+                            sx={{ fontWeight: 800, height: 22, fontSize: '0.65rem' }}
+                          />
+                          {isCredit ? (
+                            <Chip label="Credit" color="error" variant="outlined" size="small" sx={{ fontWeight: 800, fontSize: '0.65rem', height: 22 }} />
+                          ) : (
+                            <Chip label="Settled" color="success" size="small" sx={{ fontWeight: 800, fontSize: '0.65rem', height: 22 }} />
+                          )}
+                        </Stack>
+                      </Stack>
+
+                      {/* Middle: Customer Details & Items Summary */}
+                      <Box sx={{ bgcolor: '#f8fafc', p: 1.2, borderRadius: 2 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1e293b' }}>
+                          Customer: {bill.customerName} {bill.customerPhone && `(${bill.customerPhone})`}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.3 }}>
+                          Items: {bill.items.map(i => `${i.name} (${i.size}) x${i.qty}`).join(', ')}
+                        </Typography>
+                      </Box>
+
+                      <Divider />
+
+                      {/* Bottom: Total Amount & View Receipt Button */}
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Moththa Bill</Typography>
+                          <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.15rem' }}>
+                            ₹{(bill.total || bill.amount || 0).toLocaleString('en-IN')}
+                          </Typography>
+                        </Box>
+
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<ViewIcon />}
+                          onClick={() => handleViewReceipt(bill)}
+                          sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', py: 0.5 }}
+                        >
+                          Receipt Paaru
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Card>
+                );
+              })}
+            </Box>
+
+            {/* DESKTOP/TABLET: Bill History Table */}
+            <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' }, borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
+              <Table>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 800 }}>Bill No. & Date</TableCell>
@@ -389,6 +476,7 @@ export default function SalesHistoryView() {
               </TableBody>
             </Table>
           </TableContainer>
+          </Box>
         )}
 
       </Container>
