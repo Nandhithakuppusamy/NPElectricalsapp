@@ -1,62 +1,126 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { CATEGORIES, INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_BILLS } from '../data/initialData';
+import { CATEGORIES as INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_BILLS } from '../data/initialData';
+import { 
+  categoryAPI, 
+  productAPI, 
+  customerAPI, 
+  billingAPI, 
+  authAPI,
+  uploadAPI
+} from '../services/api';
 
 const ShopContext = createContext();
 
 export function ShopProvider({ children }) {
-  // Load from localStorage or defaults
-  const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem('np_electricals_categories_v1');
-    return saved ? JSON.parse(saved) : CATEGORIES;
+  // Core Entities State
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [customers, setCustomers] = useState(INITIAL_CUSTOMERS);
+  const [bills, setBills] = useState(INITIAL_BILLS);
+  const [stats, setStats] = useState(null);
+
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('np_user');
+    return saved ? JSON.parse(saved) : null;
   });
 
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('np_electricals_products_v3');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
-
-  const [customers, setCustomers] = useState(() => {
-    const saved = localStorage.getItem('np_electricals_customers_v3');
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
-  });
-
-  const [bills, setBills] = useState(() => {
-    const saved = localStorage.getItem('np_electricals_bills_v3');
-    return saved ? JSON.parse(saved) : INITIAL_BILLS;
-  });
-
-  // Active Cart / Current Bill
+  // UI & Cart State
   const [cart, setCart] = useState([]);
-
-  // Active view: 'billing' | 'customers' | 'stock' | 'sales'
-  const [currentTab, setCurrentTab] = useState('billing');
-
-  // Selected Category filter for Billing: null means all, or category id
+  const [currentTab, setCurrentTab] = useState('billing'); // 'billing' | 'customers' | 'stock' | 'sales'
   const [selectedCategory, setSelectedCategory] = useState(null);
-  
-  // Search query
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Active Receipt Modal state
   const [lastCompletedBill, setLastCompletedBill] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Sync with localStorage
-  useEffect(() => {
-    localStorage.setItem('np_electricals_categories_v1', JSON.stringify(categories));
-  }, [categories]);
+  // Loading & Error States
+  const [loading, setLoading] = useState(false);
+  const [backendConnected, setBackendConnected] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('np_electricals_products_v3', JSON.stringify(products));
-  }, [products]);
+  // Initial Fetch from Backend MongoDB API
+  const refreshAllData = async () => {
+    try {
+      setLoading(true);
 
-  useEffect(() => {
-    localStorage.setItem('np_electricals_customers_v3', JSON.stringify(customers));
-  }, [customers]);
+      const [catRes, prodRes, custRes, billRes, statsRes] = await Promise.allSettled([
+        categoryAPI.getAll(),
+        productAPI.getAll(),
+        customerAPI.getAll(),
+        billingAPI.getHistory(),
+        billingAPI.getStats()
+      ]);
 
+      if (catRes.status === 'fulfilled' && catRes.value.data.success) {
+        setCategories(catRes.value.data.data);
+        setBackendConnected(true);
+      }
+      if (prodRes.status === 'fulfilled' && prodRes.value.data.success) {
+        setProducts(prodRes.value.data.data);
+      }
+      if (custRes.status === 'fulfilled' && custRes.value.data.success) {
+        setCustomers(custRes.value.data.data);
+      }
+      if (billRes.status === 'fulfilled' && billRes.value.data.success) {
+        setBills(billRes.value.data.data);
+      }
+      if (statsRes.status === 'fulfilled' && statsRes.value.data.success) {
+        setStats(statsRes.value.data.data);
+      }
+    } catch (err) {
+      console.warn('Backend sync failed, using local/cached state:', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check login session & fetch data on mount
   useEffect(() => {
-    localStorage.setItem('np_electricals_bills_v3', JSON.stringify(bills));
-  }, [bills]);
+    const checkAuthAndFetch = async () => {
+      const token = localStorage.getItem('np_token');
+      if (token) {
+        try {
+          const res = await authAPI.getMe();
+          if (res.data.success) {
+            setCurrentUser(res.data.data);
+            localStorage.setItem('np_user', JSON.stringify(res.data.data));
+          }
+        } catch {
+          // Token expired or invalid
+          localStorage.removeItem('np_token');
+          localStorage.removeItem('np_user');
+          setCurrentUser(null);
+        }
+      }
+      await refreshAllData();
+    };
+
+    checkAuthAndFetch();
+  }, []);
+
+  // Auth Functions
+  const loginUser = async (username, password) => {
+    try {
+      const res = await authAPI.login({ username, password });
+      if (res.data.success) {
+        const { token, ...userData } = res.data.data;
+        localStorage.setItem('np_token', token);
+        localStorage.setItem('np_user', JSON.stringify(userData));
+        setCurrentUser(userData);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Login error:', err);
+      throw err;
+    }
+  };
+
+  const logoutUser = () => {
+    localStorage.removeItem('np_token');
+    localStorage.removeItem('np_user');
+    setCurrentUser(null);
+  };
 
   // Cart operations
   const addToCart = (product, quantity = 1) => {
@@ -101,444 +165,405 @@ export function ShopProvider({ children }) {
   const cartTotalItems = cart.reduce((sum, item) => sum + item.qty, 0);
 
   // Low stock products count
-  const lowStockProducts = products.filter(p => p.stock <= p.lowStockAlert);
+  const lowStockProducts = products.filter(p => (p.stockCount ?? p.stock) <= p.lowStockAlert);
 
-  // Checkout Bill
-  const checkoutBill = ({
+  // Category CRUD operations (connected to MongoDB)
+  const addNewCategory = async (categoryData) => {
+    try {
+      let finalImageUrl = categoryData.imageUrl || '';
+      if (categoryData.imageFile) {
+        try {
+          const upRes = await uploadAPI.uploadImage(categoryData.imageFile);
+          if (upRes.data.success) {
+            finalImageUrl = upRes.data.imageUrl;
+          }
+        } catch (upErr) {
+          console.warn('Category image upload warning:', upErr);
+        }
+      }
+
+      const payload = { ...categoryData, imageUrl: finalImageUrl };
+      delete payload.imageFile;
+
+      const res = await categoryAPI.create(payload);
+      if (res.data.success) {
+        setCategories(prev => [...prev, res.data.data]);
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error('Failed to add category via API:', err);
+      // Fallback local addition
+      const newCat = {
+        id: categoryData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_') || `cat_${Date.now()}`,
+        name: categoryData.name.trim(),
+        tamilName: categoryData.tamilName || categoryData.name,
+        icon: categoryData.icon || 'Package',
+        sizesPreview: categoryData.sizesPreview || 'All Sizes Available',
+        color: categoryData.color || 'from-blue-600 to-indigo-700',
+        imageUrl: categoryData.imageUrl || ''
+      };
+      setCategories(prev => [...prev, newCat]);
+      return newCat;
+    }
+  };
+
+  const updateCategory = async (categoryId, categoryData) => {
+    try {
+      let finalImageUrl = categoryData.imageUrl;
+      if (categoryData.imageFile) {
+        try {
+          const upRes = await uploadAPI.uploadImage(categoryData.imageFile);
+          if (upRes.data.success) {
+            finalImageUrl = upRes.data.imageUrl;
+          }
+        } catch (upErr) {
+          console.warn('Category image upload warning:', upErr);
+        }
+      }
+
+      const payload = { ...categoryData };
+      if (finalImageUrl !== undefined) payload.imageUrl = finalImageUrl;
+      delete payload.imageFile;
+
+      const res = await categoryAPI.update(categoryId, payload);
+      if (res.data.success) {
+        setCategories(prev => prev.map(c => c.id === categoryId ? res.data.data : c));
+      }
+    } catch (err) {
+      console.error('Failed to update category via API:', err);
+      setCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...categoryData } : c));
+    }
+  };
+
+  const deleteCategory = async (categoryId) => {
+    try {
+      await categoryAPI.delete(categoryId);
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      setProducts(prev => prev.filter(p => p.categoryId !== categoryId && p.category !== categoryId));
+      if (selectedCategory === categoryId) {
+        setSelectedCategory(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete category via API:', err);
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+      setProducts(prev => prev.filter(p => p.categoryId !== categoryId && p.category !== categoryId));
+      if (selectedCategory === categoryId) {
+        setSelectedCategory(null);
+      }
+    }
+  };
+
+  // Product CRUD operations (connected to MongoDB)
+  const addNewProduct = async (productData) => {
+    try {
+      let finalImageUrl = productData.imageUrl || '';
+      if (productData.imageFile) {
+        try {
+          const upRes = await uploadAPI.uploadImage(productData.imageFile);
+          if (upRes.data.success) {
+            finalImageUrl = upRes.data.imageUrl;
+          }
+        } catch (upErr) {
+          console.warn('Product image upload warning:', upErr);
+        }
+      }
+
+      const payload = { ...productData, imageUrl: finalImageUrl };
+      delete payload.imageFile;
+
+      const res = await productAPI.create(payload);
+      if (res.data.success) {
+        setProducts(prev => [res.data.data, ...prev]);
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error('Failed to add product via API:', err);
+      const newProd = {
+        id: `prod_${productData.categoryId || productData.category}_${Date.now()}`,
+        categoryId: productData.categoryId || productData.category,
+        name: productData.name.trim(),
+        size: productData.size.trim(),
+        price: parseFloat(productData.price) || 0,
+        stockCount: parseInt(productData.stockCount || productData.stock) || 0,
+        lowStockAlert: parseInt(productData.lowStockAlert) || 5,
+        unit: productData.unit || 'piece',
+        imageUrl: productData.imageUrl || ''
+      };
+      setProducts(prev => [newProd, ...prev]);
+      return newProd;
+    }
+  };
+
+  const updateProduct = async (productId, productData) => {
+    try {
+      let finalImageUrl = productData.imageUrl;
+      if (productData.imageFile) {
+        try {
+          const upRes = await uploadAPI.uploadImage(productData.imageFile);
+          if (upRes.data.success) {
+            finalImageUrl = upRes.data.imageUrl;
+          }
+        } catch (upErr) {
+          console.warn('Product image upload warning:', upErr);
+        }
+      }
+
+      const payload = { ...productData };
+      if (finalImageUrl !== undefined) payload.imageUrl = finalImageUrl;
+      delete payload.imageFile;
+
+      const res = await productAPI.update(productId, payload);
+      if (res.data.success) {
+        setProducts(prev => prev.map(p => p.id === productId ? res.data.data : p));
+      }
+    } catch (err) {
+      console.error('Failed to update product via API:', err);
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, ...productData } : p));
+    }
+  };
+
+  const quickAddStock = async (productId, delta) => {
+    try {
+      const res = await productAPI.updateStock(productId, { delta });
+      if (res.data.success) {
+        setProducts(prev => prev.map(p => p.id === productId ? res.data.data : p));
+      }
+    } catch (err) {
+      console.error('Failed to update stock via API:', err);
+      setProducts(prev => prev.map(p => {
+        if (p.id === productId) {
+          const curr = p.stockCount ?? p.stock;
+          return { ...p, stockCount: curr + delta, stock: curr + delta };
+        }
+        return p;
+      }));
+    }
+  };
+
+  const updateProductStock = async (productId, newStock) => {
+    try {
+      const res = await productAPI.updateStock(productId, { newStock });
+      if (res.data.success) {
+        setProducts(prev => prev.map(p => p.id === productId ? res.data.data : p));
+      }
+    } catch (err) {
+      console.error('Failed to update stock via API:', err);
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, stockCount: parseInt(newStock) || 0, stock: parseInt(newStock) || 0 } : p));
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    try {
+      await productAPI.delete(productId);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      setCart(prev => prev.filter(item => item.product.id !== productId));
+    } catch (err) {
+      console.error('Failed to delete product via API:', err);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      setCart(prev => prev.filter(item => item.product.id !== productId));
+    }
+  };
+
+  // Customer operations (connected to MongoDB)
+  const addNewCustomer = async (customerData) => {
+    try {
+      const res = await customerAPI.create(customerData);
+      if (res.data.success) {
+        setCustomers(prev => [res.data.data, ...prev]);
+        return res.data.data;
+      }
+    } catch (err) {
+      console.error('Failed to create customer via API:', err);
+      const initialBal = parseFloat(customerData.initialBalance || customerData.balance) || 0;
+      const newCust = {
+        id: `cust_${Date.now()}`,
+        name: customerData.name.trim(),
+        phone: customerData.phone ? customerData.phone.trim() : '-',
+        address: customerData.address ? customerData.address.trim() : '-',
+        balance: initialBal,
+        balanceOwed: initialBal,
+        purchaseHistory: initialBal > 0 ? [{
+          billId: customerData.billId || `PAST-${Math.floor(1000 + Math.random() * 9000)}`,
+          date: customerData.purchaseDate ? new Date(customerData.purchaseDate) : new Date(),
+          amount: initialBal,
+          paymentType: 'Credit',
+          items: customerData.itemsDescription || 'Pazhaiya Kadan (Previous Purchase Record)',
+          status: 'PENDING'
+        }] : [],
+        settledHistory: []
+      };
+      setCustomers(prev => [newCust, ...prev]);
+      return newCust;
+    }
+  };
+
+  const addPastCreditToCustomer = async (customerId, creditData) => {
+    try {
+      const res = await customerAPI.addPastCredit(customerId, creditData);
+      if (res.data.success) {
+        setCustomers(prev => prev.map(c => c.id === customerId ? res.data.data : c));
+      }
+    } catch (err) {
+      console.error('Failed to add past credit via API:', err);
+      const amt = parseFloat(creditData.amount) || 0;
+      setCustomers(prev => prev.map(c => {
+        if (c.id === customerId) {
+          const newEntry = {
+            billId: creditData.billId || `PAST-${Math.floor(1000 + Math.random() * 9000)}`,
+            date: creditData.purchaseDate ? new Date(creditData.purchaseDate) : new Date(),
+            items: creditData.itemsDescription || 'Pazhaiya Kadan (Past Purchase)',
+            amount: amt,
+            status: 'PENDING'
+          };
+          return {
+            ...c,
+            balance: (c.balance || 0) + amt,
+            balanceOwed: (c.balance || 0) + amt,
+            purchaseHistory: [newEntry, ...(c.purchaseHistory || [])]
+          };
+        }
+        return c;
+      }));
+    }
+  };
+
+  const updateCustomer = async (customerId, customerData) => {
+    try {
+      const res = await customerAPI.update(customerId, customerData);
+      if (res.data.success) {
+        setCustomers(prev => prev.map(c => c.id === customerId ? res.data.data : c));
+      }
+    } catch (err) {
+      console.error('Failed to update customer via API:', err);
+      setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...customerData } : c));
+    }
+  };
+
+  const deleteCustomer = async (customerId) => {
+    try {
+      await customerAPI.delete(customerId);
+      setCustomers(prev => prev.filter(c => c.id !== customerId));
+    } catch (err) {
+      console.error('Failed to delete customer via API:', err);
+      setCustomers(prev => prev.filter(c => c.id !== customerId));
+    }
+  };
+
+  const settleCustomerCredit = async ({ customerId, amountPaid, paymentMode, notes }) => {
+    try {
+      const res = await customerAPI.settle(customerId, {
+        amount: amountPaid,
+        paymentMode: paymentMode || 'Cash',
+        notes
+      });
+      if (res.data.success) {
+        setCustomers(prev => prev.map(c => c.id === customerId ? res.data.data.customer : c));
+        if (res.data.data.receipt) {
+          setBills(prev => [res.data.data.receipt, ...prev]);
+        }
+        return true;
+      }
+    } catch (err) {
+      console.error('Failed to settle customer balance via API:', err);
+      // Fallback local update
+      const numPaid = parseFloat(amountPaid) || 0;
+      setCustomers(prev => prev.map(c => {
+        if (c.id === customerId) {
+          const newBal = Math.max(0, (c.balance || c.balanceOwed || 0) - numPaid);
+          const newSettle = {
+            id: `settle_${Date.now()}`,
+            amount: numPaid,
+            date: new Date(),
+            paymentMode: paymentMode || 'Cash',
+            notes: notes || 'Kadan Baaki Vasool'
+          };
+          return {
+            ...c,
+            balance: newBal,
+            balanceOwed: newBal,
+            settledHistory: [newSettle, ...(c.settledHistory || [])]
+          };
+        }
+        return c;
+      }));
+      return true;
+    }
+  };
+
+  // Checkout Bill (connected to MongoDB)
+  const checkoutBill = async ({
     customerName,
     customerPhone,
     customerAddress,
-    paymentMode, // 'Cash' | 'UPI' | 'Credit'
+    paymentMode,
     notes = ''
   }) => {
-    const isCredit = paymentMode === 'Credit';
-    const billId = `BILL-${Math.floor(1000 + Math.random() * 9000)}`;
-    const billDate = new Date().toISOString();
-
-    const itemsSummary = cart
-      .map(i => `${i.product.name} (${i.product.size}) x${i.qty}`)
-      .join(', ');
-
-    const newBill = {
-      id: billId,
-      customerName: customerName.trim() || 'Walk-in Customer (நேரடி வாடிக்கையாளர்)',
-      customerPhone: customerPhone.trim() || (isCredit ? 'Credit Customer' : 'Walk-in'),
-      customerAddress: customerAddress.trim() || '',
-      date: billDate,
+    const pType = paymentMode === 'Credit' ? 'Credit' : (paymentMode === 'UPI' ? 'UPI' : 'Cash');
+    const billPayload = {
       items: cart.map(i => ({
+        productId: i.product.id,
         id: i.product.id,
         name: i.product.name,
         size: i.product.size,
-        category: i.product.category,
         price: i.product.price,
         qty: i.qty,
         total: i.product.price * i.qty,
         unit: i.product.unit || 'piece'
       })),
-      subtotal: cartSubtotal,
-      total: cartSubtotal,
-      paymentMode,
-      isSettled: !isCredit,
-      settledDate: !isCredit ? billDate : null,
-      notes: notes || (isCredit ? 'Kadan Bill - Pay later' : 'Amount Settled')
+      paymentType: pType,
+      paymentMode: pType,
+      customerName: customerName.trim() || 'Walk-in Customer (நேரடி வாடிக்கையாளர்)',
+      customerPhone: customerPhone.trim() || (pType === 'Credit' ? 'Credit Customer' : 'Walk-in'),
+      customerAddress: customerAddress.trim() || '',
+      notes: notes || (pType === 'Credit' ? 'Credit (Kadan) Bill' : 'Amount Settled')
     };
 
-    // 1. Deduct Stock for all items
-    setProducts(prevProducts =>
-      prevProducts.map(p => {
-        const cartItem = cart.find(ci => ci.product.id === p.id);
-        if (cartItem) {
-          const updatedStock = Math.max(0, p.stock - cartItem.qty);
-          return { ...p, stock: updatedStock };
-        }
-        return p;
-      })
-    );
+    try {
+      const res = await billingAPI.checkout(billPayload);
+      if (res.data.success) {
+        const createdBill = res.data.data;
+        setBills(prev => [createdBill, ...prev]);
 
-    // 2. Customer Database update
-    if (isCredit) {
-      // Find matching customer by phone or name
-      setCustomers(prevCusts => {
-        const cleanPhone = customerPhone.trim();
-        const cleanName = customerName.trim();
-        const existingIndex = prevCusts.findIndex(
-          c => (cleanPhone && c.phone === cleanPhone) || (cleanName && c.name.toLowerCase() === cleanName.toLowerCase())
-        );
+        // Refresh products & customers from backend to get updated stock and balances
+        await refreshAllData();
 
-        const creditBillEntry = {
-          billId: newBill.id,
-          date: billDate,
-          items: itemsSummary,
-          amount: cartSubtotal,
-          status: 'PENDING'
-        };
-
-        if (existingIndex >= 0) {
-          const updated = [...prevCusts];
-          const curr = updated[existingIndex];
-          updated[existingIndex] = {
-            ...curr,
-            balanceOwed: curr.balanceOwed + cartSubtotal,
-            creditBills: [creditBillEntry, ...(curr.creditBills || [])],
-            address: customerAddress.trim() || curr.address,
-            phone: cleanPhone || curr.phone
-          };
-          return updated;
-        } else {
-          // Create new customer record
-          const newCust = {
-            id: `cust-${Date.now()}`,
-            name: cleanName || 'Kadan Customer',
-            phone: cleanPhone || '-',
-            address: customerAddress.trim() || '-',
-            balanceOwed: cartSubtotal,
-            creditBills: [creditBillEntry],
-            settledHistory: []
-          };
-          return [newCust, ...prevCusts];
-        }
-      });
-    } else {
-      // If Cash or UPI with customer name provided, record settled history in customer DB
-      if (customerName.trim() && customerName.trim().toLowerCase() !== 'walk-in customer') {
-        setCustomers(prevCusts => {
-          const cleanPhone = customerPhone.trim();
-          const cleanName = customerName.trim();
-          const existingIndex = prevCusts.findIndex(
-            c => (cleanPhone && c.phone === cleanPhone) || (cleanName && c.name.toLowerCase() === cleanName.toLowerCase())
-          );
-
-          const settledEntry = {
-            id: `settle-${Date.now()}`,
-            billId: newBill.id,
-            amount: cartSubtotal,
-            date: billDate,
-            paymentMode,
-            notes: `Bill #${newBill.id} - ${itemsSummary}`
-          };
-
-          if (existingIndex >= 0) {
-            const updated = [...prevCusts];
-            const curr = updated[existingIndex];
-            updated[existingIndex] = {
-              ...curr,
-              settledHistory: [settledEntry, ...(curr.settledHistory || [])]
-            };
-            return updated;
-          } else {
-            return [
-              {
-                id: `cust-${Date.now()}`,
-                name: cleanName,
-                phone: cleanPhone || '-',
-                address: customerAddress.trim() || '-',
-                balanceOwed: 0,
-                creditBills: [],
-                settledHistory: [settledEntry]
-              },
-              ...prevCusts
-            ];
-          }
-        });
+        setCart([]);
+        setLastCompletedBill(createdBill);
+        setShowReceiptModal(true);
+        return createdBill;
       }
-    }
+    } catch (err) {
+      console.error('Failed to checkout bill via API:', err);
+      // Fallback local bill recording
+      const fallbackBill = {
+        id: `BILL-${Math.floor(1000 + Math.random() * 9000)}`,
+        customerName: billPayload.customerName,
+        customerPhone: billPayload.customerPhone,
+        customerAddress: billPayload.customerAddress,
+        items: billPayload.items,
+        amount: cartSubtotal,
+        total: cartSubtotal,
+        paymentType: pType,
+        paymentMode: pType,
+        date: new Date().toISOString(),
+        isSettled: pType !== 'Credit',
+        notes: billPayload.notes
+      };
 
-    // 3. Save to Bills list
-    setBills(prev => [newBill, ...prev]);
-
-    // 4. Clear active cart and display receipt
-    setCart([]);
-    setLastCompletedBill(newBill);
-    setShowReceiptModal(true);
-
-    return newBill;
-  };
-
-  // Settle Customer Kadan (Credit Balance Payment)
-  const settleCustomerCredit = ({ customerId, amountPaid, paymentMode, notes }) => {
-    const numPaid = parseFloat(amountPaid) || 0;
-    if (numPaid <= 0) return false;
-
-    const settleDate = new Date().toISOString();
-
-    setCustomers(prevCusts =>
-      prevCusts.map(cust => {
-        if (cust.id === customerId) {
-          const newBalance = Math.max(0, cust.balanceOwed - numPaid);
-          const newSettlement = {
-            id: `settle-${Date.now()}`,
-            amount: numPaid,
-            date: settleDate,
-            paymentMode,
-            notes: notes || `Kadan Baaki Vasool (${paymentMode})`
-          };
-
-          // Update status of credit bills if fully cleared
-          let remainingPaid = numPaid;
-          const updatedCreditBills = (cust.creditBills || []).map(cb => {
-            if (cb.status === 'PENDING' && remainingPaid >= cb.amount) {
-              remainingPaid -= cb.amount;
-              return { ...cb, status: 'SETTLED', settledDate: settleDate };
-            }
-            return cb;
-          });
-
-          return {
-            ...cust,
-            balanceOwed: newBalance,
-            creditBills: updatedCreditBills,
-            settledHistory: [newSettlement, ...(cust.settledHistory || [])]
-          };
-        }
-        return cust;
-      })
-    );
-
-    // Also record a payment settlement receipt in bills history for shop sales tracking
-    const custObj = customers.find(c => c.id === customerId);
-    const receiptBill = {
-      id: `RCV-${Math.floor(1000 + Math.random() * 9000)}`,
-      customerName: custObj ? custObj.name : 'Credit Customer',
-      customerPhone: custObj ? custObj.phone : '-',
-      customerAddress: custObj ? custObj.address : '',
-      date: settleDate,
-      items: [
-        {
-          id: 'settle-item',
-          name: 'Kadan Baaki Settlement / Credit Payment',
-          size: `Paid via ${paymentMode}`,
-          price: numPaid,
-          qty: 1,
-          total: numPaid,
-          unit: 'entry'
-        }
-      ],
-      subtotal: numPaid,
-      total: numPaid,
-      paymentMode,
-      isSettled: true,
-      settledDate: settleDate,
-      notes: notes || `Kadan Collection from ${custObj ? custObj.name : 'Customer'}`
-    };
-
-    setBills(prev => [receiptBill, ...prev]);
-    return true;
-  };
-
-  // Stock operations
-  const quickAddStock = (productId, amount) => {
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === productId ? { ...p, stock: Math.max(0, p.stock + amount) } : p
-      )
-    );
-  };
-
-  const updateProductStock = (productId, newStock) => {
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === productId ? { ...p, stock: Math.max(0, parseInt(newStock) || 0) } : p
-      )
-    );
-  };
-
-  const addNewProduct = (productData) => {
-    const newProduct = {
-      id: `prod-${productData.category}-${Date.now()}`,
-      name: productData.name.trim(),
-      category: productData.category,
-      size: productData.size.trim(),
-      price: parseFloat(productData.price) || 0,
-      stock: parseInt(productData.stock) || 0,
-      lowStockAlert: parseInt(productData.lowStockAlert) || 5,
-      unit: productData.unit || 'piece'
-    };
-    setProducts(prev => [newProduct, ...prev]);
-  };
-
-  const updateProduct = (productId, productData) => {
-    setProducts(prev =>
-      prev.map(p =>
-        p.id === productId
-          ? {
-              ...p,
-              ...productData,
-              price: parseFloat(productData.price) || p.price,
-              stock: parseInt(productData.stock) || p.stock,
-              lowStockAlert: parseInt(productData.lowStockAlert) || p.lowStockAlert
-            }
-          : p
-      )
-    );
-  };
-
-  const deleteProduct = (productId) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    setCart(prev => prev.filter(item => item.product.id !== productId));
-  };
-
-  // Category operations (Shop Owner controls)
-  const addNewCategory = (categoryData) => {
-    const rawId = categoryData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
-    const newCat = {
-      id: rawId || `cat_${Date.now()}`,
-      name: categoryData.name.trim(),
-      tamilName: categoryData.tamilName ? categoryData.tamilName.trim() : categoryData.name.trim(),
-      icon: categoryData.icon || 'Package',
-      sizesPreview: categoryData.sizesPreview ? categoryData.sizesPreview.trim() : 'All Sizes Available',
-      color: categoryData.color || 'from-blue-600 to-indigo-700',
-      bgLight: 'bg-blue-50',
-      borderLight: 'border-blue-200',
-      textAccent: 'text-blue-800'
-    };
-    setCategories(prev => [...prev, newCat]);
-    return newCat;
-  };
-
-  const updateCategory = (categoryId, categoryData) => {
-    setCategories(prev =>
-      prev.map(cat =>
-        cat.id === categoryId
-          ? {
-              ...cat,
-              name: categoryData.name ? categoryData.name.trim() : cat.name,
-              tamilName: categoryData.tamilName ? categoryData.tamilName.trim() : cat.tamilName,
-              sizesPreview: categoryData.sizesPreview !== undefined ? categoryData.sizesPreview.trim() : cat.sizesPreview
-            }
-          : cat
-      )
-    );
-  };
-
-  const deleteCategory = (categoryId) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    // Also remove or unlink products under this category
-    setProducts(prev => prev.filter(p => p.category !== categoryId));
-    if (selectedCategory === categoryId) {
-      setSelectedCategory(null);
-    }
-  };
-
-  // Customer operations
-  const addNewCustomer = (customerData) => {
-    const initialBalance = parseFloat(customerData.initialBalance || customerData.balanceOwed) || 0;
-    const purchaseDate = customerData.purchaseDate 
-      ? new Date(customerData.purchaseDate).toISOString() 
-      : new Date().toISOString();
-
-    const pastSettledAmt = parseFloat(customerData.settledAmount) || 0;
-    const settledDate = customerData.settledDate 
-      ? new Date(customerData.settledDate).toISOString() 
-      : new Date().toISOString();
-
-    const newCust = {
-      id: `cust-${Date.now()}`,
-      name: customerData.name.trim(),
-      phone: customerData.phone ? customerData.phone.trim() : '-',
-      address: customerData.address ? customerData.address.trim() : '-',
-      balanceOwed: initialBalance,
-      creditBills: initialBalance > 0 ? [{
-        billId: customerData.billId ? customerData.billId.trim() : `PAST-${Math.floor(1000 + Math.random() * 9000)}`,
-        date: purchaseDate,
-        items: customerData.itemsDescription ? customerData.itemsDescription.trim() : 'Pazhaiya Kadan (Previous Credit Record)',
-        amount: initialBalance,
-        status: 'PENDING'
-      }] : [],
-      settledHistory: pastSettledAmt > 0 ? [{
-        id: `settle-past-${Date.now()}`,
-        amount: pastSettledAmt,
-        date: settledDate,
-        paymentMode: customerData.settledMode || 'Cash',
-        notes: customerData.settledNotes || 'Pazhaiya Settled Panam (Previous Settlement)'
-      }] : []
-    };
-    setCustomers(prev => [newCust, ...prev]);
-    return newCust;
-  };
-
-  // Add a past credit purchase entry to an existing customer
-  const addPastCreditToCustomer = (customerId, { amount, purchaseDate, itemsDescription, billId }) => {
-    const amt = parseFloat(amount) || 0;
-    if (amt <= 0) return;
-
-    const pDate = purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString();
-    const newEntry = {
-      billId: billId ? billId.trim() : `PAST-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: pDate,
-      items: itemsDescription ? itemsDescription.trim() : 'Pazhaiya Kadan (Past Purchase)',
-      amount: amt,
-      status: 'PENDING'
-    };
-
-    setCustomers(prev =>
-      prev.map(c =>
-        c.id === customerId
-          ? {
-              ...c,
-              balanceOwed: c.balanceOwed + amt,
-              creditBills: [newEntry, ...(c.creditBills || [])]
-            }
-          : c
-      )
-    );
-  };
-
-  const updateCustomer = (customerId, customerData) => {
-    setCustomers(prev =>
-      prev.map(c =>
-        c.id === customerId
-          ? {
-              ...c,
-              name: customerData.name ? customerData.name.trim() : c.name,
-              phone: customerData.phone ? customerData.phone.trim() : c.phone,
-              address: customerData.address !== undefined ? customerData.address.trim() : c.address
-            }
-          : c
-      )
-    );
-  };
-
-  const deleteCustomer = (customerId) => {
-    setCustomers(prev => prev.filter(c => c.id !== customerId));
-  };
-
-  // Reset demo data
-  const resetToDefaultData = () => {
-    if (window.confirm('Ellam data-vaiyum default data-vukku reset panna venduma? (Are you sure you want to reset all data?)')) {
-      setProducts(INITIAL_PRODUCTS);
-      setCustomers(INITIAL_CUSTOMERS);
-      setBills(INITIAL_BILLS);
+      setBills(prev => [fallbackBill, ...prev]);
       setCart([]);
-      localStorage.removeItem('np_electricals_products');
-      localStorage.removeItem('np_electricals_customers');
-      localStorage.removeItem('np_electricals_bills');
+      setLastCompletedBill(fallbackBill);
+      setShowReceiptModal(true);
+      return fallbackBill;
     }
   };
 
-  // Export JSON backup
-  const exportDataJson = () => {
-    const data = {
-      appName: 'NP Electricals',
-      exportDate: new Date().toISOString(),
-      products,
-      customers,
-      bills
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `np-electricals-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Value export
   const value = {
     categories,
     products,
     customers,
     bills,
+    stats,
     cart,
     currentTab,
     setCurrentTab,
@@ -551,7 +576,16 @@ export function ShopProvider({ children }) {
     setLastCompletedBill,
     showReceiptModal,
     setShowReceiptModal,
-    // Actions
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    currentUser,
+    loading,
+    backendConnected,
+    refreshAllData,
+    // Auth
+    loginUser,
+    logoutUser,
+    // Cart actions
     addToCart,
     updateCartQty,
     removeFromCart,
@@ -559,21 +593,22 @@ export function ShopProvider({ children }) {
     cartSubtotal,
     cartTotalItems,
     checkoutBill,
-    settleCustomerCredit,
-    quickAddStock,
-    updateProductStock,
-    addNewProduct,
-    updateProduct,
-    deleteProduct,
+    // Category actions
     addNewCategory,
     updateCategory,
     deleteCategory,
+    // Product actions
+    addNewProduct,
+    updateProduct,
+    quickAddStock,
+    updateProductStock,
+    deleteProduct,
+    // Customer actions
     addNewCustomer,
     addPastCreditToCustomer,
     updateCustomer,
     deleteCustomer,
-    resetToDefaultData,
-    exportDataJson
+    settleCustomerCredit
   };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;

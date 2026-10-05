@@ -4,12 +4,14 @@ import CategoriesPage from './CategoriesPage';
 import CategoryProductsPage from './CategoryProductsPage';
 import BillCheckoutModal from './BillCheckoutModal';
 
+import { Box } from '@mui/material';
+
 export default function BillingView() {
   const { selectedCategory, setSelectedCategory } = useShop();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   return (
-    <div>
+    <Box>
       {/* 1. First Page: ONLY Categories List (No products here) */}
       {!selectedCategory ? (
         <CategoriesPage
@@ -32,6 +34,6 @@ export default function BillingView() {
           onClose={() => setIsCheckoutOpen(false)}
         />
       )}
-    </div>
+    </Box>
   );
 }

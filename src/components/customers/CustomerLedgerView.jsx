@@ -1,30 +1,56 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/ShopContext';
-import { 
-  Users, 
-  Search, 
-  UserPlus, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  CreditCard, 
-  CheckCircle2, 
-  AlertCircle, 
-  ChevronDown, 
-  ChevronUp, 
-  DollarSign, 
-  Banknote, 
-  QrCode, 
-  FileText,
-  Trash2,
-  X,
-  History,
-  Edit2,
-  PlusCircle,
-  Sparkles
-} from 'lucide-react';
 import confetti from 'canvas-confetti';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  IconButton,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Alert,
+  Chip,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
+  InputAdornment,
+  Collapse,
+  Tooltip,
+  Divider
+} from '@mui/material';
+import {
+  People as UsersIcon,
+  Search as SearchIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  CalendarMonth as CalendarIcon,
+  CheckCircle as CheckIcon,
+  WarningAmber as WarningIcon,
+  KeyboardArrowDown as ExpandMoreIcon,
+  KeyboardArrowUp as ExpandLessIcon,
+  Payments as CashIcon,
+  QrCode as UpiIcon,
+  CreditCard as CreditIcon,
+  Close as CloseIcon,
+  History as HistoryIcon,
+  AddCircle as AddCircleIcon,
+  Edit as EditIcon,
+  PersonAdd as PersonAddIcon
+} from '@mui/icons-material';
 
 export default function CustomerLedgerView() {
   const { 
@@ -40,8 +66,8 @@ export default function CustomerLedgerView() {
   const [filterType, setFilterType] = useState('pending'); // 'pending' | 'all' | 'settled'
   const [expandedCustId, setExpandedCustId] = useState(null);
 
-  // Modals state
-  const [isAddCustModalOpen, setIsAddCustModalOpen] = useState(false);
+  // Dialog States
+  const [isAddCustDialogOpen, setIsAddCustDialogOpen] = useState(false);
   const [settleModalCust, setSettleModalCust] = useState(null);
   const [pastCreditModalCust, setPastCreditModalCust] = useState(null);
   const [editingCust, setEditingCust] = useState(null);
@@ -57,7 +83,6 @@ export default function CustomerLedgerView() {
   const [newCustAddress, setNewCustAddress] = useState('');
   const [newCustBalance, setNewCustBalance] = useState('');
   const [newCustPurchaseDate, setNewCustPurchaseDate] = useState(() => {
-    // Default to today's date in YYYY-MM-DD
     return new Date().toISOString().slice(0, 10);
   });
   const [newCustItemsNote, setNewCustItemsNote] = useState('');
@@ -77,6 +102,7 @@ export default function CustomerLedgerView() {
   // Filter customers
   const filteredCustomers = customers.filter(c => {
     const q = search.toLowerCase().trim();
+    const balance = c.balanceOwed !== undefined ? c.balanceOwed : (c.balance || 0);
     const matchesSearch = !q || 
       c.name.toLowerCase().includes(q) || 
       (c.phone && c.phone.includes(q)) ||
@@ -84,20 +110,21 @@ export default function CustomerLedgerView() {
 
     if (!matchesSearch) return false;
 
-    if (filterType === 'pending') return c.balanceOwed > 0;
-    if (filterType === 'settled') return c.balanceOwed === 0;
+    if (filterType === 'pending') return balance > 0;
+    if (filterType === 'settled') return balance === 0;
     return true; // 'all'
   });
 
-  // Calculate totals
-  const totalBalanceOwed = customers.reduce((sum, c) => sum + (c.balanceOwed || 0), 0);
-  const totalPendingCustomers = customers.filter(c => c.balanceOwed > 0).length;
+  // KPI Calculations
+  const totalBalanceOwed = customers.reduce((sum, c) => sum + (c.balanceOwed !== undefined ? c.balanceOwed : (c.balance || 0)), 0);
+  const totalPendingCustomers = customers.filter(c => (c.balanceOwed !== undefined ? c.balanceOwed : (c.balance || 0)) > 0).length;
   const totalSettledCount = customers.reduce((sum, c) => sum + (c.settledHistory ? c.settledHistory.length : 0), 0);
 
-  // Handle open settle modal
+  // Open Settle Dialog
   const handleOpenSettle = (cust) => {
+    const balance = cust.balanceOwed !== undefined ? cust.balanceOwed : (cust.balance || 0);
     setSettleModalCust(cust);
-    setSettleAmount(cust.balanceOwed.toString());
+    setSettleAmount(balance.toString());
     setSettleMode('Cash');
     setSettleNotes(`Kadan full settlement - ${cust.name}`);
   };
@@ -129,7 +156,7 @@ export default function CustomerLedgerView() {
     setSettleModalCust(null);
   };
 
-  // Handle Add Previous Customer (with custom purchase date)
+  // Submit Create Customer
   const handleCreateCustomer = (e) => {
     e.preventDefault();
     if (!newCustName.trim()) {
@@ -153,10 +180,10 @@ export default function CustomerLedgerView() {
     setNewCustBalance('');
     setNewCustItemsNote('');
     setNewCustBillId('');
-    setIsAddCustModalOpen(false);
+    setIsAddCustDialogOpen(false);
   };
 
-  // Handle Add Past Credit to Existing Customer
+  // Submit Past Credit to Existing Customer
   const handleAddPastCreditSubmit = (e) => {
     e.preventDefault();
     if (!pastCreditModalCust) return;
@@ -180,7 +207,7 @@ export default function CustomerLedgerView() {
     setPastCreditBillId('');
   };
 
-  // Handle Edit Customer Profile
+  // Submit Edit Customer
   const handleEditCustomerSubmit = (e) => {
     e.preventDefault();
     if (!editingCust || !editCustName.trim()) return;
@@ -195,867 +222,801 @@ export default function CustomerLedgerView() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 pb-28 sm:pb-24">
-      
-      {/* Header & Quick Summary */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 m-0">
-            <Users className="w-6 h-6 text-blue-600" />
-            <span>Customer Database & Kadan Book</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Credit baaki kanakku, purchase dates, matrum pazhaiya customer records serkkum vasathi
-          </p>
-        </div>
-
-        {/* Feature: Add Previous Customer Data with Purchase Date */}
-        <button
-          onClick={() => setIsAddCustModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-blue-600/25 transition cursor-pointer self-start sm:self-auto active:scale-95"
-        >
-          <History className="w-4 h-4" />
-          <span>+ Pazhaiya Customer Record Serka</span>
-        </button>
-      </div>
-
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+    <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
+      <Container maxWidth="lg">
         
-        {/* Total Kadan Pending */}
-        <div className="bg-gradient-to-br from-rose-500 to-red-600 text-white rounded-2xl p-4 shadow-lg shadow-rose-500/20">
-          <div className="flex items-center justify-between opacity-80 text-xs font-semibold uppercase tracking-wider">
-            <span>Kadaiku Vara Vendiya Kadan</span>
-            <AlertCircle className="w-4 h-4" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black mt-2">
-            ₹{totalBalanceOwed.toLocaleString('en-IN')}
-          </div>
-          <div className="text-xs text-rose-100 mt-1">
-            {totalPendingCustomers} Customers baaki vaithullargal
-          </div>
-        </div>
+        {/* Top Header & Actions */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <UsersIcon color="primary" sx={{ fontSize: 28 }} />
+              <Typography variant="h1" sx={{ color: '#0f172a', m: 0 }}>
+                Customer Database & Kadan Book
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              Credit baaki kanakku, purchase dates, matrum pazhaiya customer records serkkum vasathi
+            </Typography>
+          </Box>
 
-        {/* Total Customers */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-            <span>Moththa Customers</span>
-            <Users className="w-4 h-4 text-slate-500" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
-            {customers.length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            Active customer accounts
-          </div>
-        </div>
+          {/* Option to Add Previous Customer Data Manually */}
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<PersonAddIcon />}
+            onClick={() => setIsAddCustDialogOpen(true)}
+            sx={{
+              borderRadius: 3,
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              px: 2.5,
+              py: 1,
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+              alignSelf: { xs: 'flex-start', sm: 'center' }
+            }}
+          >
+            + Pazhaiya Customer Record Serka
+          </Button>
+        </Box>
 
-        {/* Settled Transactions Count */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider">
-            <span>Settled Aana Payments</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-600 mt-2">
-            {totalSettledCount}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            Cash & UPI settlements recorded
-          </div>
-        </div>
+        {/* Summary KPI Cards */}
+        <Grid container spacing={2.5} sx={{ mb: 3 }}>
+          
+          {/* Outstanding Credit Balance */}
+          <Grid item xs={12} sm={4} size={{ xs: 12, sm: 4 }}>
+            <Card sx={{ bgcolor: '#dc2626', color: '#ffffff', borderRadius: 4, boxShadow: '0 8px 20px rgba(220, 38, 38, 0.25)' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.9 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Kadaiku Vara Vendiya Kadan
+                  </Typography>
+                  <WarningIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, mt: 1, color: '#ffffff' }}>
+                  ₹{totalBalanceOwed.toLocaleString('en-IN')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#fee2e2', display: 'block', mt: 0.5 }}>
+                  {totalPendingCustomers} Customers baaki vaithullargal
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-      </div>
+          {/* Total Customers */}
+          <Grid item xs={12} sm={4} size={{ xs: 12, sm: 4 }}>
+            <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Moththa Customers
+                  </Typography>
+                  <UsersIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, mt: 1, color: '#0f172a' }}>
+                  {customers.length}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                  Active registered accounts
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-2xs mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
+          {/* Settled Transactions */}
+          <Grid item xs={12} sm={4} size={{ xs: 12, sm: 4 }}>
+            <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Settled Aana Payments
+                  </Typography>
+                  <CheckIcon sx={{ fontSize: 20, color: '#10b981' }} />
+                </Box>
+                <Typography variant="h3" sx={{ fontWeight: 900, mt: 1, color: '#059669' }}>
+                  {totalSettledCount}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                  Cash & UPI settlements recorded
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+        </Grid>
+
+        {/* Search & Filter Bar */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
+            bgcolor: '#ffffff',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2
+          }}
+        >
+          <TextField
+            placeholder="Customer name or phone search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Customer name or phone search..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            size="small"
+            sx={{ width: { xs: '100%', sm: 320 } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                </InputAdornment>
+              )
+            }}
           />
-        </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setFilterType('pending')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              filterType === 'pending'
-                ? 'bg-rose-500 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Kadan Baaki ({totalPendingCustomers})
-          </button>
-          <button
-            onClick={() => setFilterType('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              filterType === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Ellarum ({customers.length})
-          </button>
-          <button
-            onClick={() => setFilterType('settled')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              filterType === 'settled'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Full Settled ({customers.filter(c => c.balanceOwed === 0).length})
-          </button>
-        </div>
-      </div>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' }, overflowX: 'auto' }}>
+            <Button
+              variant={filterType === 'pending' ? 'contained' : 'outlined'}
+              color="error"
+              size="small"
+              onClick={() => setFilterType('pending')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              Kadan Baaki ({totalPendingCustomers})
+            </Button>
+            <Button
+              variant={filterType === 'all' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setFilterType('all')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap', bgcolor: filterType === 'all' ? '#0f172a' : 'transparent', color: filterType === 'all' ? '#fff' : '#475569', borderColor: '#cbd5e1' }}
+            >
+              Ellarum ({customers.length})
+            </Button>
+            <Button
+              variant={filterType === 'settled' ? 'contained' : 'outlined'}
+              color="success"
+              size="small"
+              onClick={() => setFilterType('settled')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              Full Settled ({customers.filter(c => (c.balanceOwed !== undefined ? c.balanceOwed : (c.balance || 0)) === 0).length})
+            </Button>
+          </Box>
+        </Paper>
 
-      {/* Customer List */}
-      {filteredCustomers.length === 0 ? (
-        <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-slate-300">
-          <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-700">Customer Records Yedhum Illai</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Mela ulla "+ Pazhaiya Customer Record Serka" button click panni pudhu customer serunga.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredCustomers.map(customer => {
-            const hasKadan = customer.balanceOwed > 0;
-            const isExpanded = expandedCustId === customer.id;
-            const creditBills = customer.creditBills || [];
-            const settledHistory = customer.settledHistory || [];
+        {/* Customer Table (Material UI Table) */}
+        {filteredCustomers.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderRadius: 4, bgcolor: '#ffffff' }}>
+            <UsersIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#334155' }}>
+              Customer Records Yedhum Illai
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              Mela ulla "+ Pazhaiya Customer Record Serka" button click panni pudhu customer serunga.
+            </Typography>
+          </Paper>
+        ) : (
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 800 }}>Customer Name & Contact</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Address / Ooru</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800 }}>Balance Owed (பாக்கி)</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredCustomers.map((customer) => {
+                  const balance = customer.balanceOwed !== undefined ? customer.balanceOwed : (customer.balance || 0);
+                  const hasKadan = balance > 0;
+                  const isExpanded = expandedCustId === customer.id;
+                  const creditBills = customer.creditBills || customer.purchaseHistory?.filter(p => p.paymentType === 'Credit') || [];
+                  const settledHistory = customer.settledHistory || customer.purchaseHistory?.filter(p => p.paymentType !== 'Credit') || [];
 
-            return (
-              <div
-                key={customer.id}
-                className={`bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
-                  hasKadan ? 'border-rose-200 shadow-2xs' : 'border-slate-200 shadow-2xs'
-                }`}
-              >
-                {/* Main Customer Row */}
-                <div className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  
-                  {/* Left: Customer Info */}
-                  <div className="flex items-start gap-3">
-                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-xs ${
-                      hasKadan ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {customer.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm sm:text-base font-black text-slate-900 m-0">
-                          {customer.name}
-                        </h3>
-                        {hasKadan ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
-                            Kadan Irukku
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                            Zero Balance
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
-                        <span className="flex items-center gap-1 font-semibold text-slate-700">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          {customer.phone || 'No phone'}
-                        </span>
-                        {customer.address && customer.address !== '-' && (
-                          <span className="flex items-center gap-1 text-slate-400">
-                            <MapPin className="w-3.5 h-3.5" />
-                            {customer.address}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Balance Owed & Action Buttons */}
-                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                    <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-400 text-right">
-                        Balance Owed (பாக்கி)
-                      </div>
-                      <div className={`text-base sm:text-xl font-black text-right ${
-                        hasKadan ? 'text-rose-600' : 'text-emerald-600'
-                      }`}>
-                        ₹{customer.balanceOwed.toLocaleString('en-IN')}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      
-                      {/* Settle button if balance > 0 */}
-                      {hasKadan && (
-                        <button
-                          onClick={() => handleOpenSettle(customer)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition cursor-pointer flex items-center gap-1"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Panam Settle</span>
-                        </button>
-                      )}
-
-                      {/* Add another past credit bill to this customer */}
-                      <button
-                        onClick={() => {
-                          setPastCreditModalCust(customer);
-                          setPastCreditDate(new Date().toISOString().slice(0, 10));
-                        }}
-                        className="p-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition cursor-pointer text-xs font-semibold flex items-center gap-1"
-                        title="+ Pazhaiya Kadan Entry Serka (Add Past Purchase)"
-                      >
-                        <PlusCircle className="w-3.5 h-3.5 text-amber-600" />
-                        <span className="hidden md:inline">+ Kadan Entry</span>
-                      </button>
-
-                      {/* Edit Customer Profile */}
-                      <button
-                        onClick={() => {
-                          setEditingCust(customer);
-                          setEditCustName(customer.name);
-                          setEditCustPhone(customer.phone !== '-' ? customer.phone : '');
-                          setEditCustAddress(customer.address !== '-' ? customer.address : '');
-                        }}
-                        className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
-                        title="Edit Customer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Expand History Toggle */}
-                      <button
-                        onClick={() => setExpandedCustId(isExpanded ? null : customer.id)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer text-xs font-semibold flex items-center gap-1"
-                      >
-                        <History className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="hidden sm:inline">Varalaru</span>
-                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* Expanded Ledger: Credit purchases & Settled history */}
-                {isExpanded && (
-                  <div className="bg-slate-50 border-t border-slate-200 p-3.5 sm:p-5 space-y-4 animate-in slide-in-from-top-2 duration-150">
-                    
-                    {/* SECTION 1: Credit Purchases (Balance Owed details & Purchase Dates) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5 m-0">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                          <span>Credit Purchases (கடன் வாங்கிய விவரங்கள் & தேதிகள்)</span>
-                        </h4>
-                        <span className="text-[11px] text-slate-400">
-                          {creditBills.length} credit entries
-                        </span>
-                      </div>
-
-                      {creditBills.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic pl-5">
-                          Ivarukku kadan bill yedhum illai.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {creditBills.map((cb, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-white p-3 rounded-xl border border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2 shadow-2xs"
+                  return (
+                    <React.Fragment key={customer.id}>
+                      <TableRow hover sx={{ '& > *': { borderBottom: 'unset' } }}>
+                        
+                        {/* Name & Phone */}
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box
+                              sx={{
+                                width: 38,
+                                height: 38,
+                                borderRadius: 2.5,
+                                bgcolor: hasKadan ? '#fee2e2' : '#d1fae5',
+                                color: hasKadan ? '#b91c1c' : '#047857',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 900,
+                                fontSize: '0.9rem'
+                              }}
                             >
-                              <div className="flex-1">
-                                <div className="font-bold text-slate-800 flex items-center gap-2">
-                                  <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
-                                    {cb.billId}
-                                  </span>
-                                  {/* CRITICAL FEATURE: Purchase Date prominently displayed */}
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                                    <Calendar className="w-3 h-3 text-blue-600" />
-                                    <span>Purchase Date: {new Date(cb.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                  </span>
-                                </div>
-                                <div className="text-slate-700 mt-1 text-xs font-medium">
-                                  {cb.items}
-                                </div>
-                              </div>
-                              <div className="text-right flex sm:flex-col items-center sm:items-end justify-between shrink-0">
-                                <div className="font-black text-rose-600 text-base">
-                                  ₹{cb.amount.toLocaleString('en-IN')}
-                                </div>
-                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                                  cb.status === 'SETTLED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                }`}>
-                                  {cb.status === 'SETTLED' ? 'Settled Aaiduchu' : 'Kadan Baaki (Pending)'}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                              {customer.name.charAt(0).toUpperCase()}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                                {customer.name}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <PhoneIcon sx={{ fontSize: 13 }} />
+                                {customer.phone || 'No phone'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
 
-                    {/* SECTION 2: Settled Payments History */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5 m-0">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Panam Settled Aana Varalaru (Settled Payments History)</span>
-                        </h4>
-                        <span className="text-[11px] text-slate-400">
-                          {settledHistory.length} payments settled
-                        </span>
-                      </div>
+                        {/* Address */}
+                        <TableCell>
+                          <Typography variant="caption" sx={{ color: '#475569', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <LocationIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                            {customer.address && customer.address !== '-' ? customer.address : 'Not specified'}
+                          </Typography>
+                        </TableCell>
 
-                      {settledHistory.length === 0 ? (
-                        <p className="text-xs text-slate-500 italic pl-5">
-                          Munbu settled payment varalaru yedhum illai.
-                        </p>
-                      ) : (
-                        <div className="space-y-1.5">
-                          {settledHistory.map((sh, idx) => (
-                            <div
-                              key={idx}
-                              className="bg-white p-2.5 rounded-xl border border-emerald-100 flex items-center justify-between text-xs gap-2 shadow-2xs"
+                        {/* Balance Owed */}
+                        <TableCell align="right">
+                          <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: hasKadan ? '#dc2626' : '#059669' }}>
+                            ₹{balance.toLocaleString('en-IN')}
+                          </Typography>
+                        </TableCell>
+
+                        {/* Status */}
+                        <TableCell align="center">
+                          {hasKadan ? (
+                            <Chip 
+                              label="Kadan Irukku" 
+                              color="error" 
+                              size="small" 
+                              sx={{ fontWeight: 800, fontSize: '0.68rem', height: 22 }} 
+                            />
+                          ) : (
+                            <Chip 
+                              label="Zero Balance" 
+                              color="success" 
+                              variant="outlined" 
+                              size="small" 
+                              sx={{ fontWeight: 700, fontSize: '0.68rem', height: 22 }} 
+                            />
+                          )}
+                        </TableCell>
+
+                        {/* Actions */}
+                        <TableCell align="right">
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.8 }}>
+                            
+                            {/* Settle button if balance > 0 */}
+                            {hasKadan && (
+                              <Button
+                                variant="contained"
+                                color="success"
+                                size="small"
+                                onClick={() => handleOpenSettle(customer)}
+                                sx={{ borderRadius: 2, fontWeight: 800, fontSize: '0.75rem', px: 1.5, py: 0.4 }}
+                              >
+                                Panam Settle
+                              </Button>
+                            )}
+
+                            {/* Add past credit entry */}
+                            <Tooltip title="+ Pazhaiya Kadan Entry Serka">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setPastCreditModalCust(customer);
+                                  setPastCreditDate(new Date().toISOString().slice(0, 10));
+                                }}
+                                sx={{ color: '#d97706', bgcolor: '#fef3c7', '&:hover': { bgcolor: '#fde68a' } }}
+                              >
+                                <AddCircleIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+
+                            {/* Edit Customer */}
+                            <Tooltip title="Edit Customer">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setEditingCust(customer);
+                                  setEditCustName(customer.name);
+                                  setEditCustPhone(customer.phone !== '-' ? customer.phone : '');
+                                  setEditCustAddress(customer.address !== '-' ? customer.address : '');
+                                }}
+                                sx={{ color: '#64748b', '&:hover': { bgcolor: '#f1f5f9' } }}
+                              >
+                                <EditIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+
+                            {/* Expand History */}
+                            <IconButton
+                              size="small"
+                              onClick={() => setExpandedCustId(isExpanded ? null : customer.id)}
+                              sx={{ color: 'primary.main', bgcolor: '#eff6ff', '&:hover': { bgcolor: '#dbeafe' } }}
                             >
-                              <div className="flex items-center gap-2">
-                                <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold">
-                                  {sh.paymentMode === 'UPI' ? <QrCode className="w-4 h-4" /> : <Banknote className="w-4 h-4" />}
-                                </div>
-                                <div>
-                                  <div className="font-bold text-slate-800">
-                                    Settled via {sh.paymentMode}
-                                  </div>
-                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                                    <span className="font-semibold text-emerald-800">
-                                      {new Date(sh.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{sh.notes || 'Full/Part payment'}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="font-black text-emerald-700 text-sm">
-                                + ₹{sh.amount.toLocaleString('en-IN')}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                              {isExpanded ? <ExpandLessIcon sx={{ fontSize: 20 }} /> : <ExpandMoreIcon sx={{ fontSize: 20 }} />}
+                            </IconButton>
 
-                  </div>
-                )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
 
-              </div>
-            );
-          })}
-        </div>
-      )}
+                      {/* Expanded History Details Row */}
+                      <TableRow>
+                        <TableCell sx={{ py: 0, px: 3, borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none' }} colSpan={5}>
+                          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                            <Box sx={{ py: 2.5, bgcolor: '#f8fafc', borderRadius: 3, p: 2.5, my: 1.5, border: '1px solid #e2e8f0' }}>
+                              
+                              {/* Credit Purchases Section */}
+                              <Box sx={{ mb: 2.5 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                                  <CreditIcon sx={{ fontSize: 18 }} />
+                                  Credit Purchases (கடன் வாங்கிய விவரங்கள் & Purchase Dates)
+                                </Typography>
 
-      {/* MODAL 1: Settle Customer Credit Modal */}
-      {settleModalCust && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold m-0">Kadan Panam Vasool (Settle Balance)</h3>
-                <p className="text-xs text-emerald-100 mt-0.5">{settleModalCust.name}</p>
-              </div>
-              <button
-                onClick={() => setSettleModalCust(null)}
-                className="p-1 rounded-lg bg-emerald-800/50 hover:bg-emerald-800 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                                {creditBills.length === 0 ? (
+                                  <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pl: 3 }}>
+                                    Ivarukku kadan bill yedhum illai.
+                                  </Typography>
+                                ) : (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    {creditBills.map((cb, idx) => (
+                                      <Paper key={idx} variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, bgcolor: '#ffffff' }}>
+                                        <Box>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label={cb.billId || `BILL-${idx+1}`} size="small" sx={{ fontWeight: 700, fontSize: '0.65rem', height: 20 }} />
+                                            {/* Purchase Date Prominently Displayed */}
+                                            <Chip
+                                              icon={<CalendarIcon sx={{ fontSize: '13px !important' }} />}
+                                              label={`Purchase Date: ${new Date(cb.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+                                              size="small"
+                                              color="primary"
+                                              variant="outlined"
+                                              sx={{ fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+                                            />
+                                          </Box>
+                                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mt: 0.5 }}>
+                                            {cb.items || cb.itemsDescription || 'Hardware items'}
+                                          </Typography>
+                                        </Box>
 
-            <form onSubmit={handleConfirmSettle} className="p-5 space-y-4">
-              
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-between">
-                <span className="text-xs font-bold text-rose-800">Current Kadan Baaki:</span>
-                <span className="text-lg font-black text-rose-700">₹{settleModalCust.balanceOwed.toLocaleString('en-IN')}</span>
-              </div>
+                                        <Box sx={{ textAlign: 'right' }}>
+                                          <Typography sx={{ fontWeight: 900, color: '#dc2626', fontSize: '1rem' }}>
+                                            ₹{(cb.amount || 0).toLocaleString('en-IN')}
+                                          </Typography>
+                                          <Typography variant="caption" sx={{ color: cb.status === 'SETTLED' ? '#059669' : '#dc2626', fontWeight: 700 }}>
+                                            {cb.status === 'SETTLED' ? 'Settled Aaiduchu' : 'Kadan Baaki (Pending)'}
+                                          </Typography>
+                                        </Box>
+                                      </Paper>
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Vasool Aagum Amount (Settlement Amount) *
-                </label>
-                <input
-                  type="number"
+                              <Divider sx={{ my: 2 }} />
+
+                              {/* Settled History Section */}
+                              <Box>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                                  <CheckIcon sx={{ fontSize: 18 }} />
+                                  Panam Settled Aana Varalaru (Settled Payments History)
+                                </Typography>
+
+                                {settledHistory.length === 0 ? (
+                                  <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pl: 3 }}>
+                                    Munbu settled payment varalaru yedhum illai.
+                                  </Typography>
+                                ) : (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    {settledHistory.map((sh, idx) => (
+                                      <Paper key={idx} variant="outlined" sx={{ p: 1.5, borderRadius: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#ffffff' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                          <Box sx={{ p: 0.8, borderRadius: 2, bgcolor: '#ecfdf5', color: '#059669' }}>
+                                            {sh.paymentMode === 'UPI' || sh.paymentType === 'UPI' ? <UpiIcon sx={{ fontSize: 18 }} /> : <CashIcon sx={{ fontSize: 18 }} />}
+                                          </Box>
+                                          <Box>
+                                            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                                              Settled via {sh.paymentMode || sh.paymentType || 'Cash'}
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                              {new Date(sh.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} • {sh.notes || 'Payment recorded'}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                        <Typography sx={{ fontWeight: 900, color: '#059669', fontSize: '0.95rem' }}>
+                                          + ₹{(sh.amount || 0).toLocaleString('en-IN')}
+                                        </Typography>
+                                      </Paper>
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
+
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {/* DIALOG 1: Settle Customer Balance (Material UI Dialog) */}
+        {settleModalCust && (
+          <Dialog
+            open={Boolean(settleModalCust)}
+            onClose={() => setSettleModalCust(null)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+          >
+            <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#059669', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem' }}>
+                  Kadan Panam Vasool (Settle Balance)
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#d1fae5' }}>
+                  {settleModalCust.name}
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setSettleModalCust(null)} sx={{ color: '#ffffff' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <Box component="form" onSubmit={handleConfirmSettle}>
+              <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                  Current Kadan Baaki: <strong>₹{(settleModalCust.balanceOwed !== undefined ? settleModalCust.balanceOwed : (settleModalCust.balance || 0)).toLocaleString('en-IN')}</strong>
+                </Alert>
+
+                <TextField
                   required
-                  min="1"
-                  max={settleModalCust.balanceOwed}
+                  fullWidth
+                  type="number"
+                  label="Vasool Aagum Amount (Settlement Amount) *"
                   value={settleAmount}
                   onChange={(e) => setSettleAmount(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-lg font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  size="small"
                 />
-                <div className="flex gap-2 mt-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setSettleAmount(settleModalCust.balanceOwed.toString())}
-                    className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200"
-                  >
-                    Full Balance (₹{settleModalCust.balanceOwed})
-                  </button>
-                  {settleModalCust.balanceOwed > 500 && (
-                    <button
-                      type="button"
-                      onClick={() => setSettleAmount('500')}
-                      className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md"
-                    >
-                      ₹500 Part
-                    </button>
-                  )}
-                  {settleModalCust.balanceOwed > 1000 && (
-                    <button
-                      type="button"
-                      onClick={() => setSettleAmount('1000')}
-                      className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md"
-                    >
-                      ₹1,000 Part
-                    </button>
-                  )}
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Payment Mode *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSettleMode('Cash')}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition ${
-                      settleMode === 'Cash'
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-2xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="success"
+                    onClick={() => setSettleAmount((settleModalCust.balanceOwed !== undefined ? settleModalCust.balanceOwed : (settleModalCust.balance || 0)).toString())}
+                    sx={{ borderRadius: 2, fontSize: '0.72rem', fontWeight: 800 }}
                   >
-                    <Banknote className="w-4 h-4 text-emerald-600" />
-                    <span>Cash (ரொக்கம்)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSettleMode('UPI')}
-                    className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition ${
-                      settleMode === 'UPI'
-                        ? 'bg-blue-50 border-blue-500 text-blue-900 shadow-2xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                    Full Balance
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setSettleAmount('500')}
+                    sx={{ borderRadius: 2, fontSize: '0.72rem', fontWeight: 700 }}
                   >
-                    <QrCode className="w-4 h-4 text-blue-600" />
-                    <span>UPI (GPay / PhonePe)</span>
-                  </button>
-                </div>
-              </div>
+                    ₹500 Part
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setSettleAmount('1000')}
+                    sx={{ borderRadius: 2, fontSize: '0.72rem', fontWeight: 700 }}
+                  >
+                    ₹1,000 Part
+                  </Button>
+                </Box>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Notes (Optional)
-                </label>
-                <input
-                  type="text"
+                <RadioGroup
+                  row
+                  value={settleMode}
+                  onChange={(e) => setSettleMode(e.target.value)}
+                  sx={{ mt: 1 }}
+                >
+                  <FormControlLabel value="Cash" control={<Radio color="success" size="small" />} label="Cash (ரொக்கம்)" />
+                  <FormControlLabel value="UPI" control={<Radio color="primary" size="small" />} label="UPI (GPay / PhonePe)" />
+                </RadioGroup>
+
+                <TextField
+                  fullWidth
+                  label="Notes (Optional)"
+                  placeholder="e.g. Cash counter payment"
                   value={settleNotes}
                   onChange={(e) => setSettleNotes(e.target.value)}
-                  placeholder="e.g. GPay or Cash counter"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  size="small"
                 />
-              </div>
+              </DialogContent>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSettleModalCust(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
+              <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                <Button onClick={() => setSettleModalCust(null)} sx={{ color: '#64748b' }}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition cursor-pointer"
-                >
+                </Button>
+                <Button type="submit" variant="contained" color="success">
                   Panam Settled Aaiduchu (Confirm)
-                </button>
-              </div>
+                </Button>
+              </DialogActions>
+            </Box>
+          </Dialog>
+        )}
 
-            </form>
+        {/* DIALOG 2: Add Previous Customer Data Manually WITH PURCHASE DATE */}
+        <Dialog
+          open={isAddCustDialogOpen}
+          onClose={() => setIsAddCustDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+        >
+          <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <HistoryIcon sx={{ color: '#f59e0b' }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem', lineHeight: 1.2 }}>
+                  Pazhaiya Customer Record Serka
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                  Manual customer entry with previous balance & purchase date
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setIsAddCustDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
 
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: Add Previous Customer Record (MANUAL ENTRY WITH PURCHASE DATE) */}
-      {isAddCustModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4.5 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-black m-0 flex items-center gap-2">
-                  <History className="w-5 h-5 text-amber-400" />
-                  <span>Pazhaiya Customer Record Serka</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Mundhaiya kadan baaki & purchase date-udan enter pannunga
-                </p>
-              </div>
-              <button
-                onClick={() => setIsAddCustModalOpen(false)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateCustomer} className="p-5 space-y-3.5 max-h-[75vh] overflow-y-auto">
+          <Box component="form" onSubmit={handleCreateCustomer}>
+            <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
               
-              {/* 1. Customer Details */}
-              <div className="space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  1. Customer Details (வாடிக்கையாளர் விவரம்)
-                </div>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                1. Customer Details (வாடிக்கையாளர் விவரம்)
+              </Typography>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Customer Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newCustName}
-                    onChange={(e) => setNewCustName(e.target.value)}
-                    placeholder="e.g. Ramesh Electrician / Raja Contractor"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <TextField
+                required
+                fullWidth
+                label="Customer Name *"
+                placeholder="e.g. Ramesh Electrician / Raja Contractor"
+                value={newCustName}
+                onChange={(e) => setNewCustName(e.target.value)}
+                size="small"
+              />
+
+              <Grid container spacing={2}>
+                <Grid item xs={6} size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Phone Number"
+                    placeholder="e.g. 98401 23456"
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    size="small"
                   />
-                </div>
+                </Grid>
+                <Grid item xs={6} size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Address / Landmark"
+                    placeholder="e.g. South Bazaar"
+                    value={newCustAddress}
+                    onChange={(e) => setNewCustAddress(e.target.value)}
+                    size="small"
+                  />
+                </Grid>
+              </Grid>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustPhone}
-                      onChange={(e) => setNewCustPhone(e.target.value)}
-                      placeholder="e.g. 98401 23456"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+              <Divider sx={{ my: 0.5 }} />
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Address / Landmark
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustAddress}
-                      onChange={(e) => setNewCustAddress(e.target.value)}
-                      placeholder="e.g. South Bazaar, Near Temple"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#dc2626' }}>
+                2. Pazhaiya Kadan & Purchase Date (Outstanding Balance)
+              </Typography>
 
-              {/* 2. Previous Credit & Purchase Date (CORE REQUIREMENT) */}
-              <div className="pt-2 border-t border-slate-200 space-y-3">
-                <div className="text-xs font-bold uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>2. Pazhaiya Kadan & Purchase Date (Outstanding Balance)</span>
-                </div>
+              <Grid container spacing={2}>
+                <Grid item xs={6} size={{ xs: 6 }}>
+                  <TextField
+                    required
+                    fullWidth
+                    type="number"
+                    label="Kadan Baaki Amount (₹) *"
+                    placeholder="e.g. 3500"
+                    value={newCustBalance}
+                    onChange={(e) => setNewCustBalance(e.target.value)}
+                    size="small"
+                  />
+                </Grid>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Balance Owed */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Kadan Baaki Amount (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newCustBalance}
-                      onChange={(e) => setNewCustBalance(e.target.value)}
-                      placeholder="e.g. 3500 (Baaki Amount)"
-                      className="w-full px-3.5 py-2.5 bg-rose-50 border border-rose-300 rounded-xl text-sm font-black text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                    />
-                  </div>
+                {/* PURCHASE DATE PICKER (Core Requirement) */}
+                <Grid item xs={6} size={{ xs: 6 }}>
+                  <TextField
+                    required
+                    fullWidth
+                    type="date"
+                    label="Purchase Date select pannunga *"
+                    value={newCustPurchaseDate}
+                    onChange={(e) => setNewCustPurchaseDate(e.target.value)}
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </Grid>
 
-                  {/* PURCHASE DATE PICKER */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Kadan Thedi (Purchase Date) *</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={newCustPurchaseDate}
-                      onChange={(e) => setNewCustPurchaseDate(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
+              <TextField
+                fullWidth
+                label="Vangiya Porutkal Vivaram (Items Note)"
+                placeholder="e.g. 2 inch screws, Finolex wires, 1 HP motor"
+                value={newCustItemsNote}
+                onChange={(e) => setNewCustItemsNote(e.target.value)}
+                size="small"
+              />
 
-                {/* Items Description & Bill Reference */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Items Note (வாங்கிய சாமான்கள்)
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustItemsNote}
-                      onChange={(e) => setNewCustItemsNote(e.target.value)}
-                      placeholder="e.g. 1.0 Sq mm Wire + 16A Switch"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+              <TextField
+                fullWidth
+                label="Pazhaiya Bill No. / Book Page No. (Optional)"
+                placeholder="e.g. KADAN-PAGE-45"
+                value={newCustBillId}
+                onChange={(e) => setNewCustBillId(e.target.value)}
+                size="small"
+              />
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Old Bill / Slip No. (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={newCustBillId}
-                      onChange={(e) => setNewCustBillId(e.target.value)}
-                      placeholder="e.g. SLIP-102"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
+            </DialogContent>
 
-              </div>
+            <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <Button onClick={() => setIsAddCustDialogOpen(false)} sx={{ color: '#64748b' }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Customer Record Save Pannu
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
 
-              {/* Submit buttons */}
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddCustModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
-                  Record Save Pannu
-                </button>
-              </div>
+        {/* DIALOG 3: Add Past Credit to Existing Customer */}
+        {pastCreditModalCust && (
+          <Dialog
+            open={Boolean(pastCreditModalCust)}
+            onClose={() => setPastCreditModalCust(null)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+          >
+            <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem' }}>
+                  + Kadan Entry Serka
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                  {pastCreditModalCust.name}
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setPastCreditModalCust(null)} sx={{ color: '#94a3b8' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
 
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: Add Past Credit to Existing Customer */}
-      {pastCreditModalCust && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-amber-400" />
-                  <span>Pazhaiya Kadan Entry ({pastCreditModalCust.name})</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Select purchase date and amount to add to this customer
-                </p>
-              </div>
-              <button
-                onClick={() => setPastCreditModalCust(null)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAddPastCreditSubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Kadan Amount (₹) *
-                </label>
-                <input
-                  type="number"
+            <Box component="form" onSubmit={handleAddPastCreditSubmit}>
+              <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                
+                <TextField
                   required
-                  min="1"
+                  fullWidth
+                  type="number"
+                  label="Pudhu Kadan Amount (₹) *"
                   value={pastCreditAmt}
                   onChange={(e) => setPastCreditAmt(e.target.value)}
-                  placeholder="e.g. 1200"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base font-black text-rose-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Purchase Date (கடன் வாங்கிய தேதி) *</span>
-                </label>
-                <input
-                  type="date"
+                <TextField
                   required
+                  fullWidth
+                  type="date"
+                  label="Purchase Date select pannunga *"
                   value={pastCreditDate}
                   onChange={(e) => setPastCreditDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
+                  InputLabelProps={{ shrink: true }}
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Items Purchased (சாமான்கள் குறிப்பு)
-                </label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Porutkal Vivaram (Items Note)"
+                  placeholder="e.g. 5 Pcs bend, 10 Pcs holder"
                   value={pastCreditItems}
                   onChange={(e) => setPastCreditItems(e.target.value)}
-                  placeholder="e.g. 0.5 HP Motor + UPVC Valve"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Bill No. / Slip No. (Optional)
-                </label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Bill No. / Note"
+                  placeholder="e.g. SLIP-12"
                   value={pastCreditBillId}
                   onChange={(e) => setPastCreditBillId(e.target.value)}
-                  placeholder="e.g. OLD-542"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
+                  size="small"
                 />
-              </div>
+              </DialogContent>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPastCreditModalCust(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
+              <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                <Button onClick={() => setPastCreditModalCust(null)} sx={{ color: '#64748b' }}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
-                  Kadan Entry Serka
-                </button>
-              </div>
+                </Button>
+                <Button type="submit" variant="contained" color="error">
+                  Kadan Save Pannu
+                </Button>
+              </DialogActions>
+            </Box>
+          </Dialog>
+        )}
 
-            </form>
+        {/* DIALOG 4: Edit Customer Profile */}
+        {editingCust && (
+          <Dialog
+            open={Boolean(editingCust)}
+            onClose={() => setEditingCust(null)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+          >
+            <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#ffffff', fontSize: '1rem' }}>
+                Customer Profile Matra (Edit)
+              </Typography>
+              <IconButton onClick={() => setEditingCust(null)} sx={{ color: '#94a3b8' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
 
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 4: Edit Customer Profile */}
-      {editingCust && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-blue-400" />
-                <span>Customer Profile Matra</span>
-              </h3>
-              <button
-                onClick={() => setEditingCust(null)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditCustomerSubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Customer Name *</label>
-                <input
-                  type="text"
+            <Box component="form" onSubmit={handleEditCustomerSubmit}>
+              <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
                   required
+                  fullWidth
+                  label="Customer Name *"
                   value={editCustName}
                   onChange={(e) => setEditCustName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Phone Number"
                   value={editCustPhone}
                   onChange={(e) => setEditCustPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Address / Landmark</label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Address / Landmark"
                   value={editCustAddress}
                   onChange={(e) => setEditCustAddress(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold"
+                  size="small"
                 />
-              </div>
+              </DialogContent>
 
-              <div className="pt-2 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`"${editingCust.name}" customer-ai delete panna venduma?`)) {
-                      deleteCustomer(editingCust.id);
-                      setEditingCust(null);
-                    }
-                  }}
-                  className="px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-bold text-xs flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Customer</span>
-                </button>
+              <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                <Button onClick={() => setEditingCust(null)} sx={{ color: '#64748b' }}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="contained" color="primary">
+                  Save Changes
+                </Button>
+              </DialogActions>
+            </Box>
+          </Dialog>
+        )}
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingCust(null)}
-                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
-    </div>
+      </Container>
+    </Box>
   );
 }

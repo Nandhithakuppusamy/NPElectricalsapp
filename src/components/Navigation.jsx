@@ -1,129 +1,198 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { 
-  ShoppingCart, 
-  Users, 
-  Boxes, 
-  BarChart3, 
-  AlertCircle 
-} from 'lucide-react';
+import {
+  Paper,
+  Tabs,
+  Tab,
+  Box,
+  Typography,
+  Badge,
+  useTheme,
+  useMediaQuery,
+  BottomNavigation,
+  BottomNavigationAction
+} from '@mui/material';
+import {
+  ShoppingCart as CartIcon,
+  People as UsersIcon,
+  Inventory2 as StockIcon,
+  QueryStats as SalesIcon
+} from '@mui/icons-material';
 
 export default function Navigation() {
-  const { currentTab, setCurrentTab, setSelectedCategory, cartTotalItems, lowStockProducts, customers } = useShop();
+  const {
+    currentTab,
+    setCurrentTab,
+    setSelectedCategory,
+    cartTotalItems,
+    lowStockProducts,
+    customers
+  } = useShop();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Count customers who have pending balance
-  const kadanCustomersCount = customers.filter(c => c.balanceOwed > 0).length;
+  const kadanCustomersCount = customers.filter(c => (c.balance || c.balanceOwed || 0) > 0).length;
 
-  const tabs = [
+  const tabsConfig = [
     {
       id: 'billing',
       label: 'Categories & Bill',
       tamilLabel: 'பிரிவுகள் & பில்',
-      icon: ShoppingCart,
+      icon: <CartIcon />,
       badge: cartTotalItems > 0 ? cartTotalItems : null,
-      badgeColor: 'bg-amber-500 text-slate-950 font-bold'
+      badgeColor: 'warning'
     },
     {
       id: 'customers',
       label: 'Customer Kadan Book',
       tamilLabel: 'வாடிக்கையாளர் கடன்',
-      icon: Users,
+      icon: <UsersIcon />,
       badge: kadanCustomersCount > 0 ? kadanCustomersCount : null,
-      badgeColor: 'bg-rose-500 text-white'
+      badgeColor: 'error'
     },
     {
       id: 'stock',
       label: 'Stock Nilavaram',
       tamilLabel: 'சரக்கு இருப்பு',
-      icon: Boxes,
+      icon: <StockIcon />,
       badge: lowStockProducts.length > 0 ? lowStockProducts.length : null,
-      badgeColor: 'bg-rose-600 text-white animate-pulse'
+      badgeColor: 'error'
     },
     {
       id: 'sales',
       label: 'Virpanai Kanakku',
       tamilLabel: 'விற்பனை கணக்கு',
-      icon: BarChart3,
+      icon: <SalesIcon />,
       badge: null
     }
   ];
 
+  const handleTabChange = (newVal) => {
+    setCurrentTab(newVal);
+    if (newVal === 'billing') {
+      setSelectedCategory(null);
+    }
+  };
+
   return (
     <>
-      {/* Desktop Top Navigation Tabs */}
-      <nav className="bg-white border-b border-slate-200 shadow-xs sticky top-[57px] sm:top-[65px] z-30">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6">
-          <div className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto no-scrollbar py-2">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              const isActive = currentTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setCurrentTab(tab.id);
-                    if (tab.id === 'billing') setSelectedCategory(null);
-                  }}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-semibold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 scale-[1.02]'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                  <div className="text-left leading-tight">
-                    <span>{tab.label}</span>
-                    <span className={`block text-[10px] sm:hidden ${isActive ? 'text-blue-100' : 'text-slate-400'}`}>
+      {/* Desktop / Tablet Sub-AppBar Sticky Tabs */}
+      <Paper
+        elevation={1}
+        square
+        sx={{
+          bgcolor: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
+          position: 'sticky',
+          top: { xs: 60, sm: 68 },
+          zIndex: 30,
+          display: { xs: 'none', sm: 'block' }
+        }}
+      >
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: { sm: 3 } }}>
+          <Tabs
+            value={currentTab}
+            onChange={(e, val) => handleTabChange(val)}
+            variant="scrollable"
+            scrollButtons="auto"
+            textColor="primary"
+            indicatorColor="primary"
+            sx={{
+              minHeight: 56,
+              '& .MuiTab-root': {
+                minHeight: 56,
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                px: 2.5
+              }
+            }}
+          >
+            {tabsConfig.map((tab) => (
+              <Tab
+                key={tab.id}
+                value={tab.id}
+                iconPosition="start"
+                icon={
+                  tab.badge ? (
+                    <Badge badgeContent={tab.badge} color={tab.badgeColor} sx={{ '& .MuiBadge-badge': { fontWeight: 900 } }}>
+                      {tab.icon}
+                    </Badge>
+                  ) : (
+                    tab.icon
+                  )
+                }
+                label={
+                  <Box sx={{ textAlign: 'left', ml: 0.5 }}>
+                    <Typography component="span" sx={{ display: 'block', fontWeight: 800, fontSize: '0.875rem', lineHeight: 1.2 }}>
+                      {tab.label}
+                    </Typography>
+                    <Typography component="span" sx={{ display: 'block', fontSize: '0.7rem', color: 'text.secondary', lineHeight: 1.1 }}>
                       {tab.tamilLabel}
-                    </span>
-                  </div>
-                  {tab.badge !== null && (
-                    <span
-                      className={`ml-1 px-1.5 py-0.5 text-[11px] rounded-full font-bold flex items-center justify-center min-w-[20px] ${tab.badgeColor}`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+                    </Typography>
+                  </Box>
+                }
+              />
+            ))}
+          </Tabs>
+        </Box>
+      </Paper>
 
-      {/* Mobile Bottom Fixed Navigation Bar (App Experience) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 z-50 shadow-2xl flex justify-around items-center">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = currentTab === tab.id;
-          return (
-            <button
+      {/* Mobile Bottom Fixed Navigation (App Experience) */}
+      <Paper
+        elevation={8}
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 40,
+          display: { xs: 'block', sm: 'none' },
+          borderTop: '1px solid #e2e8f0'
+        }}
+      >
+        <BottomNavigation
+          value={currentTab}
+          onChange={(e, val) => handleTabChange(val)}
+          showLabels
+          sx={{
+            height: 62,
+            bgcolor: '#ffffff',
+            '& .MuiBottomNavigationAction-root': {
+              minWidth: 'auto',
+              px: 1,
+              py: 0.5,
+              '&.Mui-selected': {
+                color: 'primary.main',
+                '& .MuiTypography-root': { fontWeight: 800 }
+              }
+            }
+          }}
+        >
+          {tabsConfig.map((tab) => (
+            <BottomNavigationAction
               key={tab.id}
-              onClick={() => {
-                setCurrentTab(tab.id);
-                if (tab.id === 'billing') setSelectedCategory(null);
-              }}
-              className={`flex flex-col items-center justify-center relative py-1 px-2 rounded-xl transition ${
-                isActive ? 'text-blue-600 font-bold' : 'text-slate-500 font-medium'
-              }`}
-            >
-              <div className="relative">
-                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : ''}`} />
-                {tab.badge !== null && (
-                  <span
-                    className={`absolute -top-1.5 -right-2.5 text-[10px] font-bold px-1.5 py-0.2 rounded-full min-w-[16px] text-center ${tab.badgeColor}`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] mt-1 tracking-tight text-center leading-tight">
-                {tab.label.split(' ')[0]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              value={tab.id}
+              label={
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, mt: 0.3 }}>
+                  {tab.label.split(' ')[0]}
+                </Typography>
+              }
+              icon={
+                tab.badge ? (
+                  <Badge badgeContent={tab.badge} color={tab.badgeColor} sx={{ '& .MuiBadge-badge': { fontSize: '0.65rem', height: 16, minWidth: 16 } }}>
+                    {tab.icon}
+                  </Badge>
+                ) : (
+                  tab.icon
+                )
+              }
+            />
+          ))}
+        </BottomNavigation>
+      </Paper>
     </>
   );
 }

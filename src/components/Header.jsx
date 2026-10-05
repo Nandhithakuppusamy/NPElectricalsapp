@@ -1,127 +1,438 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
-import { 
-  Zap, 
-  AlertTriangle, 
-  TrendingUp, 
-  Download, 
-  RotateCcw, 
-  PhoneCall, 
-  Store,
-  Wallet
-} from 'lucide-react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  Button,
+  Chip,
+  Tooltip,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Badge,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import {
+  Menu as MenuIcon,
+  FlashOn as ZapIcon,
+  ShoppingCart as CartIcon,
+  People as UsersIcon,
+  Inventory2 as StockIcon,
+  QueryStats as SalesIcon,
+  WarningAmber as AlertIcon,
+  AccountBalanceWallet as WalletIcon,
+  TrendingUp as TrendingUpIcon,
+  AdminPanelSettings as ShieldIcon,
+  Lock as LockIcon,
+  CloudDone as CloudDoneIcon,
+  CloudOff as CloudOffIcon,
+  FileDownload as DownloadIcon,
+  RestartAlt as ResetIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 
 export default function Header() {
-  const { 
-    products, 
-    customers, 
-    bills, 
-    lowStockProducts, 
-    resetToDefaultData, 
+  const {
+    customers,
+    bills,
+    lowStockProducts,
+    cartTotalItems,
+    resetToDefaultData,
     exportDataJson,
+    currentTab,
     setCurrentTab,
-    setSelectedCategory
+    setSelectedCategory,
+    currentUser,
+    setIsAuthModalOpen,
+    backendConnected
   } = useShop();
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Calculate today's sales
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todaysBills = bills.filter(b => b.date && b.date.slice(0, 10) === todayStr);
-  const todaysTotal = todaysBills.reduce((sum, b) => sum + (b.total || 0), 0);
+  const todaysBills = bills.filter(b => b.date && (b.date.slice ? b.date.slice(0, 10) === todayStr : new Date(b.date).toISOString().slice(0, 10) === todayStr));
+  const todaysTotal = todaysBills.reduce((sum, b) => sum + (b.amount || b.total || 0), 0);
 
   // Total credit balance owed by customers
-  const totalKadanBalance = customers.reduce((sum, c) => sum + (c.balanceOwed || 0), 0);
+  const totalKadanBalance = customers.reduce((sum, c) => sum + (c.balance || c.balanceOwed || 0), 0);
+  const kadanCount = customers.filter(c => (c.balance || c.balanceOwed || 0) > 0).length;
+
+  const navItems = [
+    {
+      id: 'billing',
+      label: 'Categories & Bill',
+      tamilLabel: 'பிரிவுகள் & பில்',
+      icon: <CartIcon />,
+      badge: cartTotalItems > 0 ? cartTotalItems : null,
+      badgeColor: 'warning'
+    },
+    {
+      id: 'customers',
+      label: 'Customer Kadan Book',
+      tamilLabel: 'வாடிக்கையாளர் கடன்',
+      icon: <UsersIcon />,
+      badge: kadanCount > 0 ? kadanCount : null,
+      badgeColor: 'error'
+    },
+    {
+      id: 'stock',
+      label: 'Stock Nilavaram',
+      tamilLabel: 'சரக்கு இருப்பு',
+      icon: <StockIcon />,
+      badge: lowStockProducts.length > 0 ? lowStockProducts.length : null,
+      badgeColor: 'error'
+    },
+    {
+      id: 'sales',
+      label: 'Virpanai Kanakku',
+      tamilLabel: 'விற்பனை கணக்கு',
+      icon: <SalesIcon />,
+      badge: null
+    }
+  ];
+
+  const handleNavClick = (id) => {
+    setCurrentTab(id);
+    if (id === 'billing') setSelectedCategory(null);
+    setDrawerOpen(false);
+  };
 
   return (
-    <header className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white shadow-xl border-b border-blue-900/50 sticky top-0 z-40">
-      {/* Top Banner */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 sm:py-3">
-        <div className="flex items-center justify-between gap-2">
+    <>
+      {/* Top Main AppBar */}
+      <AppBar 
+        position="sticky" 
+        sx={{ 
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          zIndex: (theme) => theme.zIndex.drawer + 1
+        }}
+      >
+        <Toolbar sx={{ px: { xs: 1.5, sm: 3 }, py: 0.8, display: 'flex', justifyContent: 'space-between', minHeight: { xs: 60, sm: 68 } }}>
           
-          {/* Brand Logo & Name */}
-          <div 
-            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" 
-            onClick={() => {
-              setCurrentTab('billing');
-              setSelectedCategory(null);
-            }}
-          >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/20 text-slate-950 font-black text-xl">
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 fill-slate-950" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white m-0 p-0 leading-tight">
-                  NP Electricals
-                </h1>
-                <span className="hidden xs:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  Kadai App
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-blue-200/80 font-medium leading-none mt-0.5">
-                மின்துறை & குழாய் பொருட்கள் • Billing & Stock
-              </p>
-            </div>
-          </div>
+          {/* Left: Drawer Toggle Button & Shop Brand */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+            <IconButton 
+              color="inherit" 
+              edge="start" 
+              onClick={() => setDrawerOpen(true)}
+              sx={{ bgcolor: 'rgba(255,255,255,0.08)', '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' }, borderRadius: 2.5 }}
+              title="Open Navigation Menu"
+            >
+              <MenuIcon />
+            </IconButton>
 
-          {/* Quick Metrics & Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            
-            {/* Low stock pill warning */}
-            {lowStockProducts.length > 0 && (
-              <button
-                onClick={() => setCurrentTab('stock')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition text-xs font-semibold animate-pulse"
-                title={`${lowStockProducts.length} items low stock`}
+            <Box 
+              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+              onClick={() => {
+                setCurrentTab('billing');
+                setSelectedCategory(null);
+              }}
+            >
+              <Box 
+                sx={{ 
+                  width: { xs: 38, sm: 44 }, 
+                  height: { xs: 38, sm: 44 }, 
+                  borderRadius: 3, 
+                  bgcolor: '#f59e0b', 
+                  color: '#0f172a',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                  fontWeight: 900
+                }}
               >
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-                <span className="hidden sm:inline">Stock Alert:</span>
-                <span className="bg-rose-600 text-white px-1.5 py-0.2 rounded-full text-[10px]">
+                <ZapIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
+              </Box>
+
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#ffffff', lineHeight: 1.1, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
+                    NP Electricals
+                  </Typography>
+                  <Chip 
+                    label="Kadai App" 
+                    size="small" 
+                    sx={{ 
+                      height: 20, 
+                      fontSize: '0.65rem', 
+                      fontWeight: 800, 
+                      bgcolor: 'rgba(245, 158, 11, 0.2)', 
+                      color: '#fcd34d',
+                      border: '1px solid rgba(245, 158, 11, 0.35)',
+                      display: { xs: 'none', sm: 'inline-flex' }
+                    }} 
+                  />
+                  {/* MongoDB Live Status Pill */}
+                  <Tooltip title={backendConnected ? "MongoDB Server (127.0.0.1:5000) Live Connection" : "Local Cache Mode"}>
+                    <Chip 
+                      icon={backendConnected ? <CloudDoneIcon sx={{ fontSize: '13px !important' }} /> : <CloudOffIcon sx={{ fontSize: '13px !important' }} />}
+                      label={backendConnected ? 'MongoDB Live' : 'Offline'}
+                      size="small"
+                      sx={{ 
+                        height: 20, 
+                        fontSize: '0.65rem', 
+                        fontWeight: 700, 
+                        bgcolor: backendConnected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        color: backendConnected ? '#6ee7b7' : '#fca5a5',
+                        border: `1px solid ${backendConnected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                        display: { xs: 'none', md: 'inline-flex' }
+                      }} 
+                    />
+                  </Tooltip>
+                </Box>
+                <Typography variant="caption" sx={{ color: 'rgba(191, 219, 254, 0.8)', fontWeight: 500, display: 'block', fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  மின்துறை & குழாய் பொருட்கள் • Billing & Stock
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Right: Summary Badges & Owner Actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.5 } }}>
+            
+            {/* Low stock warning chip */}
+            {lowStockProducts.length > 0 && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setCurrentTab('stock')}
+                startIcon={<AlertIcon />}
+                sx={{
+                  color: '#fda4af',
+                  borderColor: 'rgba(244, 63, 94, 0.5)',
+                  bgcolor: 'rgba(244, 63, 94, 0.15)',
+                  py: 0.5,
+                  px: { xs: 1, sm: 1.5 },
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  borderRadius: 2.5,
+                  '&:hover': { bgcolor: 'rgba(244, 63, 94, 0.25)', borderColor: '#f43f5e' }
+                }}
+              >
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, mr: 0.5 }}>Stock Alert:</Box>
+                <Typography component="span" sx={{ fontWeight: 900, bgcolor: '#e11d48', px: 0.8, py: 0.1, borderRadius: 1.5, fontSize: '0.7rem', color: '#fff' }}>
                   {lowStockProducts.length}
-                </span>
-              </button>
+                </Typography>
+              </Button>
             )}
 
-            {/* Total Kadan pill */}
-            <button
+            {/* Total Kadan balance button */}
+            <Button
+              variant="outlined"
+              size="small"
               onClick={() => setCurrentTab('customers')}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition text-xs font-semibold"
+              startIcon={<WalletIcon sx={{ color: '#fbbf24' }} />}
+              sx={{
+                color: '#fef08a',
+                borderColor: 'rgba(245, 158, 11, 0.4)',
+                bgcolor: 'rgba(245, 158, 11, 0.12)',
+                py: 0.5,
+                px: 1.5,
+                fontSize: '0.75rem',
+                borderRadius: 2.5,
+                display: { xs: 'none', lg: 'inline-flex' },
+                '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.2)' }
+              }}
             >
-              <Wallet className="w-3.5 h-3.5 text-amber-400" />
-              <span>Kadan Baaki:</span>
-              <span className="font-bold text-white">₹{totalKadanBalance.toLocaleString('en-IN')}</span>
-            </button>
+              Kadan Baaki: <Typography component="span" sx={{ fontWeight: 900, ml: 0.5, color: '#fff' }}>₹{totalKadanBalance.toLocaleString('en-IN')}</Typography>
+            </Button>
 
-            {/* Today's Sales pill */}
-            <button
+            {/* Today's Sales button */}
+            <Button
+              variant="outlined"
+              size="small"
               onClick={() => setCurrentTab('sales')}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition text-xs font-semibold"
+              startIcon={<TrendingUpIcon sx={{ color: '#34d399' }} />}
+              sx={{
+                color: '#a7f3d0',
+                borderColor: 'rgba(16, 185, 129, 0.4)',
+                bgcolor: 'rgba(16, 185, 129, 0.12)',
+                py: 0.5,
+                px: 1.5,
+                fontSize: '0.75rem',
+                borderRadius: 2.5,
+                display: { xs: 'none', sm: 'inline-flex' },
+                '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.2)' }
+              }}
             >
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Inraiya Sales:</span>
-              <span className="font-bold text-white">₹{todaysTotal.toLocaleString('en-IN')}</span>
-            </button>
+              Inraiya Sales: <Typography component="span" sx={{ fontWeight: 900, ml: 0.5, color: '#fff' }}>₹{todaysTotal.toLocaleString('en-IN')}</Typography>
+            </Button>
 
-            {/* Backup JSON */}
-            <button
-              onClick={exportDataJson}
-              title="Download Data Backup (JSON)"
-              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+            {/* Owner Login Trigger */}
+            <Button
+              variant={currentUser ? "contained" : "outlined"}
+              size="small"
+              onClick={() => setIsAuthModalOpen(true)}
+              startIcon={currentUser ? <ShieldIcon sx={{ color: '#a7f3d0' }} /> : <LockIcon sx={{ fontSize: 16 }} />}
+              sx={{
+                color: currentUser ? '#ffffff' : '#e2e8f0',
+                borderColor: currentUser ? 'transparent' : 'rgba(255,255,255,0.2)',
+                bgcolor: currentUser ? '#2563eb' : 'rgba(255,255,255,0.06)',
+                borderRadius: 2.5,
+                fontSize: '0.75rem',
+                px: { xs: 1, sm: 1.8 },
+                py: 0.6,
+                '&:hover': { bgcolor: currentUser ? '#1d4ed8' : 'rgba(255,255,255,0.12)' }
+              }}
             >
-              <Download className="w-4 h-4" />
-            </button>
+              {currentUser ? currentUser.name.split(' ')[0] : 'Owner'}
+            </Button>
 
-            {/* Reset Data */}
-            <button
-              onClick={resetToDefaultData}
-              title="Reset to Demo Data"
-              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          </div>
+            {/* Backup & Reset Icons */}
+            <Tooltip title="Download JSON Backup">
+              <IconButton 
+                size="small" 
+                onClick={exportDataJson}
+                sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff', bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                <DownloadIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
-        </div>
-      </div>
-    </header>
+            <Tooltip title="Reset Demo Data">
+              <IconButton 
+                size="small" 
+                onClick={resetToDefaultData}
+                sx={{ color: '#94a3b8', '&:hover': { color: '#f87171', bgcolor: 'rgba(239,68,68,0.1)' } }}
+              >
+                <ResetIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Side Drawer for Quick Access (Material UI Drawer) */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: 280, sm: 320 },
+            bgcolor: '#ffffff',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }
+        }}
+      >
+        <Box>
+          {/* Drawer Header */}
+          <Box sx={{ p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 36, height: 36, borderRadius: 2.5, bgcolor: '#f59e0b', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ZapIcon />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                  NP Electricals
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+                  Quick Navigation Menu
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Quick Metrics in Drawer */}
+          <Box sx={{ p: 2, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>Inraiya Virpanai:</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#10b981' }}>₹{todaysTotal.toLocaleString('en-IN')}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>Kadan Baaki (Total):</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444' }}>₹{totalKadanBalance.toLocaleString('en-IN')}</Typography>
+            </Box>
+          </Box>
+
+          {/* Navigation Items List */}
+          <List sx={{ p: 1.5 }}>
+            {navItems.map((item) => {
+              const isSelected = currentTab === item.id;
+              return (
+                <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
+                  <ListItemButton
+                    onClick={() => handleNavClick(item.id)}
+                    selected={isSelected}
+                    sx={{
+                      borderRadius: 3,
+                      py: 1.2,
+                      px: 2,
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.main',
+                        color: '#ffffff',
+                        '&:hover': { bgcolor: 'primary.dark' },
+                        '& .MuiListItemIcon-root': { color: '#ffffff' }
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40, color: isSelected ? '#ffffff' : 'primary.main' }}>
+                      {item.badge ? (
+                        <Badge badgeContent={item.badge} color={item.badgeColor}>
+                          {item.icon}
+                        </Badge>
+                      ) : (
+                        item.icon
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                          {item.label}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography sx={{ fontSize: '0.72rem', color: isSelected ? 'rgba(255,255,255,0.8)' : '#64748b' }}>
+                          {item.tamilLabel}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+        </Box>
+
+        {/* Drawer Footer */}
+        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc', textAlign: 'center' }}>
+          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>
+            NP Electricals Kadai App • v2.0
+          </Typography>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setDrawerOpen(false);
+              setIsAuthModalOpen(true);
+            }}
+            startIcon={currentUser ? <ShieldIcon /> : <LockIcon />}
+            sx={{ borderRadius: 2.5 }}
+          >
+            {currentUser ? `Admin: ${currentUser.name}` : 'Shop Owner Login'}
+          </Button>
+        </Box>
+      </Drawer>
+    </>
   );
 }

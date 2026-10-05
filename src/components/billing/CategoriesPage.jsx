@@ -1,39 +1,80 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/ShopContext';
-import { 
-  Lightbulb,
-  Zap,
-  Wrench,
-  CornerUpRight,
-  Cpu,
-  ToggleRight,
-  Droplets,
-  Disc,
-  CircleDot,
-  Package,
-  ChevronRight,
-  Sparkles,
-  ArrowRight,
-  ShoppingCart,
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  Settings,
-  ShieldCheck
-} from 'lucide-react';
+import { getCategoryDefaultImage } from '../../data/initialData';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Chip,
+  Paper,
+  Tooltip,
+  Divider
+} from '@mui/material';
+import {
+  Lightbulb as LightbulbIcon,
+  FlashOn as BoltIcon,
+  Build as BuildIcon,
+  AltRoute as AltRouteIcon,
+  SettingsSuggest as MotorIcon,
+  ToggleOn as SwitchIcon,
+  WaterDrop as TapIcon,
+  RadioButtonChecked as ValveIcon,
+  DonutLarge as BearingIcon,
+  Category as CategoryIcon,
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  ArrowForward as ArrowForwardIcon,
+  ShoppingCart as CartIcon,
+  Close as CloseIcon,
+  CloudUpload as CloudUploadIcon,
+  Image as ImageIcon
+} from '@mui/icons-material';
 
-const iconMap = {
-  Lightbulb,
-  Zap,
-  Wrench,
-  CornerUpRight,
-  Cpu,
-  ToggleRight,
-  Droplets,
-  Disc,
-  CircleDot,
-  Package
+const getCategoryIcon = (iconName, catId) => {
+  switch (iconName || catId) {
+    case 'Lightbulb':
+    case 'bulb':
+      return <LightbulbIcon sx={{ fontSize: 20 }} />;
+    case 'Zap':
+    case 'holder':
+      return <BoltIcon sx={{ fontSize: 20 }} />;
+    case 'Wrench':
+    case 'screw':
+      return <BuildIcon sx={{ fontSize: 20 }} />;
+    case 'CornerUpRight':
+    case 'bend_elbow':
+      return <AltRouteIcon sx={{ fontSize: 20 }} />;
+    case 'Cpu':
+    case 'motor':
+      return <MotorIcon sx={{ fontSize: 20 }} />;
+    case 'ToggleRight':
+    case 'switch':
+      return <SwitchIcon sx={{ fontSize: 22 }} />;
+    case 'Droplets':
+    case 'tap':
+      return <TapIcon sx={{ fontSize: 20 }} />;
+    case 'Disc':
+    case 'ball_valve':
+      return <ValveIcon sx={{ fontSize: 20 }} />;
+    case 'CircleDot':
+    case 'bearing':
+      return <BearingIcon sx={{ fontSize: 20 }} />;
+    default:
+      return <CategoryIcon sx={{ fontSize: 20 }} />;
+  }
 };
 
 export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
@@ -48,71 +89,107 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
     deleteCategory 
   } = useShop();
 
-  // Modals state
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Dialog States
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // Form states for Add Category
+  // Form State: Add Category
   const [newCatName, setNewCatName] = useState('');
   const [newCatTamilName, setNewCatTamilName] = useState('');
   const [newCatSizesPreview, setNewCatSizesPreview] = useState('');
+  const [newCatImageUrl, setNewCatImageUrl] = useState('');
+  const [newCatImageFile, setNewCatImageFile] = useState(null);
+  const [newCatImagePreview, setNewCatImagePreview] = useState('');
 
-  // Form states for Edit Category
+  // Form State: Edit Category
   const [editName, setEditName] = useState('');
   const [editTamilName, setEditTamilName] = useState('');
   const [editSizesPreview, setEditSizesPreview] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editImageFile, setEditImageFile] = useState(null);
+  const [editImagePreview, setEditImagePreview] = useState('');
 
-  // Handle Add Category
-  const handleAddCategorySubmit = (e) => {
+  // Handle Add File Selection
+  const handleAddFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewCatImageFile(file);
+      setNewCatImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Handle Edit File Selection
+  const handleEditFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditImageFile(file);
+      setEditImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Submit Add Category
+  const handleAddCategorySubmit = async (e) => {
     e.preventDefault();
     if (!newCatName.trim()) {
       alert('Category Name kandippa podanum!');
       return;
     }
 
-    addNewCategory({
+    await addNewCategory({
       name: newCatName.trim(),
       tamilName: newCatTamilName.trim() || newCatName.trim(),
       sizesPreview: newCatSizesPreview.trim() || 'All Sizes Available',
-      icon: 'Package',
-      color: 'from-blue-600 to-indigo-700'
+      icon: 'Category',
+      color: 'from-blue-600 to-indigo-700',
+      imageUrl: newCatImageUrl.trim(),
+      imageFile: newCatImageFile
     });
 
     setNewCatName('');
     setNewCatTamilName('');
     setNewCatSizesPreview('');
-    setIsAddModalOpen(false);
+    setNewCatImageUrl('');
+    setNewCatImageFile(null);
+    setNewCatImagePreview('');
+    setIsAddDialogOpen(false);
   };
 
-  // Open Edit Modal
+  // Open Edit Dialog
   const handleOpenEdit = (e, cat) => {
-    e.stopPropagation(); // prevent navigating to category products
+    e.stopPropagation();
     setEditingCategory(cat);
     setEditName(cat.name);
     setEditTamilName(cat.tamilName || '');
     setEditSizesPreview(cat.sizesPreview || '');
+    setEditImageUrl(cat.imageUrl || '');
+    setEditImageFile(null);
+    setEditImagePreview(cat.imageUrl || getCategoryDefaultImage(cat.id));
   };
 
-  // Handle Edit Category Submit
-  const handleEditCategorySubmit = (e) => {
+  // Submit Edit Category
+  const handleEditCategorySubmit = async (e) => {
     e.preventDefault();
     if (!editingCategory || !editName.trim()) return;
 
-    updateCategory(editingCategory.id, {
+    await updateCategory(editingCategory.id, {
       name: editName.trim(),
       tamilName: editTamilName.trim(),
-      sizesPreview: editSizesPreview.trim()
+      sizesPreview: editSizesPreview.trim(),
+      imageUrl: editImageUrl.trim(),
+      imageFile: editImageFile
     });
 
     setEditingCategory(null);
+    setEditImageFile(null);
+    setEditImagePreview('');
   };
 
-  // Handle Delete Category
+  // Delete Category
   const handleDelete = (e, cat) => {
-    e.stopPropagation(); // prevent navigating
-    const productCount = products.filter(p => p.category === cat.id).length;
-    const confirmMsg = productCount > 0
-      ? `"${cat.name}" category-ai neekka venduma? Idharkul ulla ${productCount} products-um delete aagum!`
+    e.stopPropagation();
+    const count = products.filter(p => p.category === cat.id || p.categoryId === cat.id).length;
+    const confirmMsg = count > 0
+      ? `"${cat.name}" category-ai neekka venduma? Idharkul ulla ${count} products-um delete aagum!`
       : `"${cat.name}" category-ai delete panna venduma?`;
 
     if (window.confirm(confirmMsg)) {
@@ -121,305 +198,560 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-5 pb-32">
-      
-      {/* Top Banner with Shop Owner Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold mb-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>NP Electricals • Categories Page (No Products Here)</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight m-0">
-            Porul Categories (பிரிவுகள்)
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Category-ai click pannunga product list paarka, illana pudhu category serka/manage pannunga:
-          </p>
-        </div>
+    <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
+      <Container maxWidth="lg">
+        
+        {/* Top Header Banner */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 4 }}>
+          <Box>
+            <Chip 
+              label="NP Electricals • Categories Page (No Products Here)" 
+              color="primary" 
+              variant="outlined"
+              size="small"
+              sx={{ fontWeight: 800, mb: 1, bgcolor: 'rgba(37, 99, 235, 0.06)' }}
+            />
+            <Typography variant="h1" sx={{ color: '#0f172a', m: 0 }}>
+              Porul Categories (பிரிவுகள்)
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5, fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
+              Category-ai click pannunga product list paarka, illana pudhu category serka/manage pannunga:
+            </Typography>
+          </Box>
 
-        {/* Shop Owner Control: ADD New Category */}
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-blue-600/25 transition cursor-pointer self-start sm:self-auto active:scale-95"
+          {/* Shop Owner Control: ADD New Category */}
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setNewCatName('');
+              setNewCatTamilName('');
+              setNewCatSizesPreview('');
+              setNewCatImageUrl('');
+              setNewCatImageFile(null);
+              setNewCatImagePreview('');
+              setIsAddDialogOpen(true);
+            }}
+            sx={{
+              px: { xs: 2.5, sm: 3 },
+              py: 1.2,
+              borderRadius: 3,
+              fontSize: '0.875rem',
+              fontWeight: 800,
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+              alignSelf: { xs: 'flex-start', sm: 'center' }
+            }}
+          >
+            + Pudhu Category Serka
+          </Button>
+        </Box>
+
+        {/* Categories Grid - Material UI Cards with CardMedia Image at Top */}
+        <Grid container spacing={3}>
+          {categories.map((cat, index) => {
+            const count = products.filter(p => p.category === cat.id || p.categoryId === cat.id).length;
+            const displayImg = cat.imageUrl || getCategoryDefaultImage(cat.id);
+
+            return (
+              <Grid 
+                item 
+                xs={12} 
+                sm={6} 
+                md={4} 
+                key={cat.id}
+                size={{ xs: 12, sm: 6, md: 4 }}
+              >
+                <Card
+                  onClick={() => onSelectCategory(cat.id)}
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    borderRadius: 4,
+                    border: '1.5px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.05)',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    bgcolor: '#ffffff',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      borderColor: 'primary.main',
+                      boxShadow: '0 14px 30px rgba(37, 99, 235, 0.16)'
+                    }
+                  }}
+                >
+                  {/* Real Image Displayed at the Top using Material UI CardMedia */}
+                  <Box sx={{ position: 'relative', overflow: 'hidden', bgcolor: '#f1f5f9' }}>
+                    <CardMedia
+                      component="img"
+                      image={displayImg}
+                      alt={cat.name}
+                      onError={(e) => {
+                        e.target.src = getCategoryDefaultImage(cat.id);
+                      }}
+                      sx={{
+                        height: { xs: 160, sm: 175 },
+                        width: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.3s ease',
+                        '&:hover': {
+                          transform: 'scale(1.04)'
+                        }
+                      }}
+                    />
+
+                    {/* Category Index & Icon Pill Overlay */}
+                    <Box 
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 12, 
+                        left: 12, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.8,
+                        bgcolor: 'rgba(15, 23, 42, 0.82)', 
+                        backdropFilter: 'blur(4px)',
+                        color: '#ffffff', 
+                        px: 1.2, 
+                        py: 0.4, 
+                        borderRadius: 2 
+                      }}
+                    >
+                      {getCategoryIcon(cat.icon, cat.id)}
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', color: '#fcd34d' }}>
+                        #{index + 1}
+                      </Typography>
+                    </Box>
+
+                    {/* Product count tag overlay */}
+                    <Box 
+                      sx={{ 
+                        position: 'absolute', 
+                        bottom: 10, 
+                        right: 12, 
+                        bgcolor: 'rgba(255, 255, 255, 0.92)', 
+                        backdropFilter: 'blur(4px)',
+                        px: 1.2, 
+                        py: 0.3, 
+                        borderRadius: 2,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.72rem', color: '#1e293b' }}>
+                        {count} Products
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* CardContent: Title, Bilingual labels, Description / Sizes info */}
+                  <CardContent sx={{ p: 2.5, pb: 1.5, flexGrow: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                        {cat.name}
+                      </Typography>
+                      {cat.tamilName && (
+                        <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                          ({cat.tamilName})
+                        </Typography>
+                      )}
+                    </Box>
+
+                    {/* Sizes / Description Preview */}
+                    <Box sx={{ mt: 1.5, bgcolor: '#fef3c7', px: 1.2, py: 0.6, borderRadius: 2, border: '1px solid #fde68a' }}>
+                      <Typography variant="caption" sx={{ color: '#92400e', fontWeight: 800, display: 'block' }}>
+                        Sizes / Inches:
+                      </Typography>
+                      <Typography sx={{ fontWeight: 600, color: '#78350f', fontSize: '0.75rem', lineHeight: 1.2, mt: 0.2 }}>
+                        {cat.sizesPreview || 'All sizes available'}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+
+                  <Divider sx={{ borderColor: '#f1f5f9' }} />
+
+                  {/* CardActions: Shop Owner Controls (Edit/Delete) + View Button */}
+                  <CardActions sx={{ px: 2, py: 1.2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#fafafa' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                      {/* Shop Owner Edit Button */}
+                      <Tooltip title="Category Peyar / Padam Matra (Edit Category & Image)">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<EditIcon sx={{ fontSize: 15 }} />}
+                          onClick={(e) => handleOpenEdit(e, cat)}
+                          sx={{ 
+                            fontSize: '0.72rem', 
+                            fontWeight: 700, 
+                            borderRadius: 2,
+                            py: 0.4,
+                            px: 1.2,
+                            color: '#475569',
+                            borderColor: '#cbd5e1',
+                            bgcolor: '#ffffff',
+                            '&:hover': { bgcolor: '#eff6ff', borderColor: 'primary.main', color: 'primary.main' }
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </Tooltip>
+
+                      {/* Shop Owner Delete Button */}
+                      <Tooltip title="Category-ai Neekka (Delete)">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleDelete(e, cat)}
+                          sx={{ color: '#64748b', bgcolor: '#ffffff', border: '1px solid #e2e8f0', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    {/* View Products Button */}
+                    <Button
+                      size="small"
+                      color="primary"
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: 15 }} />}
+                      sx={{ fontWeight: 800, fontSize: '0.75rem', borderRadius: 2 }}
+                    >
+                      View
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+
+        {/* DIALOG 1: ADD New Category (with Image Upload) */}
+        <Dialog 
+          open={isAddDialogOpen} 
+          onClose={() => setIsAddDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
         >
-          <Plus className="w-4 h-4 stroke-[3]" />
-          <span>+ Pudhu Category Serka</span>
-        </button>
-      </div>
+          <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AddIcon sx={{ color: '#f59e0b' }} />
+              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#fff' }}>
+                Pudhu Category Serka (Category Add pannunga)
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setIsAddDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
 
-      {/* 10+ Categories Grid ONLY - Clean, No products on this page */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-        {categories.map((cat, index) => {
-          const Icon = iconMap[cat.icon] || Package;
-          const count = products.filter(p => p.category === cat.id).length;
-          
-          return (
-            <div
-              key={cat.id}
-              onClick={() => onSelectCategory(cat.id)}
-              className="group relative p-4 sm:p-5 bg-white hover:bg-slate-50/80 rounded-2xl border-2 border-slate-200 hover:border-blue-500 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-3 cursor-pointer active:scale-[0.99]"
-            >
-              {/* Category Icon & Info */}
-              <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
-                <div className={`w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${cat.color || 'from-blue-600 to-indigo-700'} text-white flex items-center justify-center shadow-md shadow-slate-300/50 shrink-0 group-hover:scale-105 transition duration-200`}>
-                  <Icon className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2.2]" />
-                </div>
+          <Box component="form" onSubmit={handleAddCategorySubmit}>
+            <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              
+              <TextField
+                required
+                fullWidth
+                label="Category Name (English) *"
+                placeholder="e.g. Capacitor, Fan Blade, Water Tank"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                size="small"
+              />
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black text-slate-400 shrink-0">
-                      #{index + 1}
-                    </span>
-                    <h2 className="text-base sm:text-lg font-black text-slate-900 m-0 group-hover:text-blue-600 transition truncate">
-                      {cat.name}
-                    </h2>
-                    {cat.tamilName && (
-                      <span className="text-xs font-bold text-slate-500 truncate">
-                        ({cat.tamilName})
-                      </span>
-                    )}
-                  </div>
+              <TextField
+                fullWidth
+                label="Tamil Name (தமிழ் பெயர்)"
+                placeholder="e.g. கெபாசிட்டர் / மின் தேக்கி"
+                value={newCatTamilName}
+                onChange={(e) => setNewCatTamilName(e.target.value)}
+                size="small"
+              />
 
-                  {/* Sizes Preview */}
-                  <div className="text-xs text-amber-700 font-semibold mt-0.5 truncate">
-                    Sizes: <span className="text-slate-600 font-medium">{cat.sizesPreview}</span>
-                  </div>
+              <TextField
+                fullWidth
+                label="Sizes / Inches Preview (அளவுகள்)"
+                placeholder="e.g. 2.5 MFD, 3.15 MFD, 36 MFD"
+                value={newCatSizesPreview}
+                onChange={(e) => setNewCatSizesPreview(e.target.value)}
+                size="small"
+              />
 
-                  {/* Product Count Badge */}
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    {count} products available
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons: Shop Owner Controls (Edit & Delete) + View Arrow */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              {/* IMAGE UPLOAD SECTION */}
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                  Category Padam / Image Upload (Optional)
+                </Typography>
                 
-                {/* Shop Owner Control: UPDATE Category Name */}
-                <button
-                  type="button"
-                  onClick={(e) => handleOpenEdit(e, cat)}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 transition cursor-pointer"
-                  title="Category Peyarai Matra (Update Category)"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 2, mt: 1.5 }}>
+                  {/* File Upload Button */}
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                  >
+                    Upload Image File
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      onChange={handleAddFileChange}
+                    />
+                  </Button>
 
-                {/* Shop Owner Control: DELETE Category */}
-                <button
-                  type="button"
-                  onClick={(e) => handleDelete(e, cat)}
-                  className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-700 transition cursor-pointer"
-                  title="Category-ai Neekka (Delete Category)"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    or enter image URL below:
+                  </Typography>
+                </Box>
 
-                {/* Right Arrow (Click to open products page) */}
-                <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition ml-1 text-blue-600">
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              </div>
+                <TextField
+                  fullWidth
+                  label="Direct Image URL (Optional)"
+                  placeholder="https://example.com/image.jpg"
+                  value={newCatImageUrl}
+                  onChange={(e) => {
+                    setNewCatImageUrl(e.target.value);
+                    if (!newCatImageFile) setNewCatImagePreview(e.target.value);
+                  }}
+                  size="small"
+                  sx={{ mt: 1.5 }}
+                />
 
-            </div>
-          );
-        })}
-      </div>
+                {/* Preview Box */}
+                {newCatImagePreview && (
+                  <Box sx={{ mt: 2, textAlign: 'center' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                      Selected Image Preview:
+                    </Typography>
+                    <Box
+                      component="img"
+                      src={newCatImagePreview}
+                      alt="Preview"
+                      sx={{
+                        width: '100%',
+                        maxHeight: 140,
+                        objectFit: 'cover',
+                        borderRadius: 2,
+                        border: '1px solid #cbd5e1'
+                      }}
+                    />
+                  </Box>
+                )}
+              </Paper>
 
-      {/* MODAL 1: ADD New Category */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-400" />
-                <span>Pudhu Category Serka (Add Category)</span>
-              </h3>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            </DialogContent>
 
-            <form onSubmit={handleAddCategorySubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Category Name (English) *
-                </label>
-                <input
-                  type="text"
+            <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <Button onClick={() => setIsAddDialogOpen(false)} sx={{ color: '#64748b' }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Category Add pannunga
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+
+        {/* DIALOG 2: UPDATE Category Details & Image */}
+        {editingCategory && (
+          <Dialog 
+            open={Boolean(editingCategory)} 
+            onClose={() => setEditingCategory(null)}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+          >
+            <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EditIcon sx={{ color: '#38bdf8' }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#fff' }}>
+                  Category & Padam Matra (Update Category & Image)
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setEditingCategory(null)} sx={{ color: '#94a3b8' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <Box component="form" onSubmit={handleEditCategorySubmit}>
+              <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                
+                <TextField
                   required
-                  value={newCatName}
-                  onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder="e.g. Capacitor, Fan Blade, Water Tank"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tamil Name (தமிழ் பெயர்)
-                </label>
-                <input
-                  type="text"
-                  value={newCatTamilName}
-                  onChange={(e) => setNewCatTamilName(e.target.value)}
-                  placeholder="e.g. கெபாசிட்டர் / மின் தேக்கி"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Sizes / Inches Preview (அளவுகள்)
-                </label>
-                <input
-                  type="text"
-                  value={newCatSizesPreview}
-                  onChange={(e) => setNewCatSizesPreview(e.target.value)}
-                  placeholder="e.g. 2.5 MFD, 3.15 MFD, 36 MFD"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
-                  Category Save Pannu
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: UPDATE Category Name */}
-      {editingCategory && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-blue-400" />
-                <span>Category Peyarai Matra (Update Category)</span>
-              </h3>
-              <button
-                onClick={() => setEditingCategory(null)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEditCategorySubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Category Name (English) *
-                </label>
-                <input
-                  type="text"
-                  required
+                  fullWidth
+                  label="Category Name (English) *"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tamil Name (தமிழ் பெயர்)
-                </label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Tamil Name (தமிழ் பெயர்)"
                   value={editTamilName}
                   onChange={(e) => setEditTamilName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Sizes / Inches Preview
-                </label>
-                <input
-                  type="text"
+                <TextField
+                  fullWidth
+                  label="Sizes / Inches Preview"
                   value={editSizesPreview}
                   onChange={(e) => setEditSizesPreview(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingCategory(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
+                {/* EDIT IMAGE UPLOAD SECTION */}
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1e293b', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ImageIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                    Category Padam / Image Matra (Change Image)
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 2, mt: 1.5 }}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<CloudUploadIcon />}
+                      sx={{ borderRadius: 2.5, fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                    >
+                      Pudhu Padam Upload Pannu
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        onChange={handleEditFileChange}
+                      />
+                    </Button>
+
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      or change image URL:
+                    </Typography>
+                  </Box>
+
+                  <TextField
+                    fullWidth
+                    label="Image URL"
+                    value={editImageUrl}
+                    onChange={(e) => {
+                      setEditImageUrl(e.target.value);
+                      if (!editImageFile) setEditImagePreview(e.target.value);
+                    }}
+                    size="small"
+                    sx={{ mt: 1.5 }}
+                  />
+
+                  {/* Preview */}
+                  {editImagePreview && (
+                    <Box sx={{ mt: 2, textAlign: 'center' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                        Image Preview:
+                      </Typography>
+                      <Box
+                        component="img"
+                        src={editImagePreview}
+                        alt="Preview"
+                        sx={{
+                          width: '100%',
+                          maxHeight: 140,
+                          objectFit: 'cover',
+                          borderRadius: 2,
+                          border: '1px solid #cbd5e1'
+                        }}
+                      />
+                    </Box>
+                  )}
+                </Paper>
+
+              </DialogContent>
+
+              <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                <Button onClick={() => setEditingCategory(null)} sx={{ color: '#64748b' }}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
+                </Button>
+                <Button type="submit" variant="contained" color="primary">
                   Save Changes (மாற்றங்களை சேமி)
-                </button>
-              </div>
+                </Button>
+              </DialogActions>
+            </Box>
+          </Dialog>
+        )}
 
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* Floating Bottom Cart / Bill Total Bar (if items added) */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-14 sm:bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-40 bg-slate-950 text-white rounded-2xl p-3 sm:p-4 shadow-2xl border border-slate-800 backdrop-blur-md animate-in slide-in-from-bottom-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="relative p-2.5 rounded-xl bg-amber-400 text-slate-950">
-                <ShoppingCart className="w-5 h-5" />
-                <span className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center border-2 border-slate-950">
-                  {cartTotalItems}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] text-slate-400 font-medium">
+        {/* Floating Bottom Cart / Bill Total Bar */}
+        {cart.length > 0 && (
+          <Paper
+            elevation={10}
+            sx={{
+              position: 'fixed',
+              bottom: { xs: 70, sm: 24 },
+              left: { xs: 16, sm: 'auto' },
+              right: { xs: 16, sm: 28 },
+              maxWidth: { sm: 420 },
+              width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+              zIndex: 40,
+              bgcolor: '#0f172a',
+              color: '#ffffff',
+              borderRadius: 4,
+              p: 2,
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ position: 'relative', width: 44, height: 44, borderRadius: 3, bgcolor: '#f59e0b', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CartIcon />
+                <Chip
+                  label={cartTotalItems}
+                  color="error"
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    height: 20,
+                    minWidth: 20,
+                    fontWeight: 900,
+                    fontSize: '0.65rem'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', lineHeight: 1.1 }}>
                   {cart.length} Items • Moththa Bill:
-                </div>
-                <div className="text-base sm:text-xl font-black text-amber-400">
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: '#fbbf24', lineHeight: 1.2 }}>
                   ₹{cartSubtotal.toLocaleString('en-IN')}
-                </div>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
-            <button
+            <Button
+              variant="contained"
+              color="success"
+              endIcon={<ArrowForwardIcon />}
               onClick={onOpenCheckout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition active:scale-95 cursor-pointer"
+              sx={{
+                px: 2.5,
+                py: 1,
+                borderRadius: 3,
+                fontWeight: 900,
+                fontSize: '0.875rem',
+                bgcolor: '#10b981',
+                '&:hover': { bgcolor: '#059669' }
+              }}
             >
-              <span>Bill Podu</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+              Bill Podu
+            </Button>
+          </Paper>
+        )}
 
-    </div>
+      </Container>
+    </Box>
   );
 }

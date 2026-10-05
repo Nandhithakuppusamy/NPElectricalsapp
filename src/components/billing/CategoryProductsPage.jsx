@@ -1,43 +1,51 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/ShopContext';
-import { 
-  ArrowLeft, 
-  Plus, 
-  Minus, 
-  ShoppingCart, 
-  AlertTriangle, 
-  Tag, 
-  ArrowRight, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  X, 
-  PackagePlus, 
-  Sparkles,
-  Lightbulb,
-  Zap,
-  Wrench,
-  CornerUpRight,
-  Cpu,
-  ToggleRight,
-  Droplets,
-  Disc,
-  CircleDot,
-  Package
-} from 'lucide-react';
-
-const iconMap = {
-  Lightbulb,
-  Zap,
-  Wrench,
-  CornerUpRight,
-  Cpu,
-  ToggleRight,
-  Droplets,
-  Disc,
-  CircleDot,
-  Package
-};
+import { getProductDefaultImage } from '../../data/initialData';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  CardActions,
+  Typography,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Alert,
+  AlertTitle,
+  Chip,
+  Paper,
+  InputAdornment,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Tooltip,
+  Divider
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Inventory2 as InventoryIcon,
+  WarningAmber as WarningIcon,
+  Sell as TagIcon,
+  ShoppingCart as CartIcon,
+  Close as CloseIcon,
+  ArrowForward as ArrowForwardIcon,
+  CheckCircle as CheckIcon,
+  CloudUpload as CloudUploadIcon,
+  Image as ImageIcon
+} from '@mui/icons-material';
 
 export default function CategoryProductsPage({ categoryId, onBackToCategories, onOpenCheckout }) {
   const { 
@@ -55,8 +63,8 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
 
   const [localSearch, setLocalSearch] = useState('');
 
-  // Modals state
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  // Dialog States
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   // Add Product Form State
@@ -66,6 +74,9 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
   const [newProdStock, setNewProdStock] = useState('20');
   const [newProdAlert, setNewProdAlert] = useState('5');
   const [newProdUnit, setNewProdUnit] = useState('piece');
+  const [newProdImageUrl, setNewProdImageUrl] = useState('');
+  const [newProdImageFile, setNewProdImageFile] = useState(null);
+  const [newProdImagePreview, setNewProdImagePreview] = useState('');
 
   // Edit Product Form State
   const [editProdName, setEditProdName] = useState('');
@@ -74,21 +85,21 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
   const [editProdStock, setEditProdStock] = useState('');
   const [editProdAlert, setEditProdAlert] = useState('5');
   const [editProdUnit, setEditProdUnit] = useState('piece');
+  const [editProdImageUrl, setEditProdImageUrl] = useState('');
+  const [editProdImageFile, setEditProdImageFile] = useState(null);
+  const [editProdImagePreview, setEditProdImagePreview] = useState('');
 
-  // Find the selected category metadata
+  // Selected Category Info
   const category = categories.find(c => c.id === categoryId) || {
     id: categoryId,
     name: categoryId,
     tamilName: '',
-    icon: 'Package',
-    color: 'from-blue-600 to-indigo-700'
+    sizesPreview: ''
   };
 
-  const Icon = iconMap[category.icon] || Package;
-
-  // Filter products for this category
+  // Products under this category
   const categoryProducts = products.filter(p => {
-    const isCat = p.category === categoryId;
+    const isCat = p.category === categoryId || p.categoryId === categoryId;
     const q = localSearch.toLowerCase().trim();
     const isSearchMatch = !q || 
       p.name.toLowerCase().includes(q) || 
@@ -96,28 +107,52 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
     return isCat && isSearchMatch;
   });
 
-  // Get cart quantity
+  // Low stock products specifically in this category
+  const categoryLowStock = categoryProducts.filter(p => (p.stock ?? p.stockCount ?? 0) <= (p.lowStockAlert || 5));
+
   const getCartQty = (productId) => {
     const item = cart.find(i => i.product.id === productId);
     return item ? item.qty : 0;
   };
 
+  // Handle Add Image File Selection
+  const handleAddFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewProdImageFile(file);
+      setNewProdImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  // Handle Edit Image File Selection
+  const handleEditFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditProdImageFile(file);
+      setEditProdImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   // Submit Add Product
-  const handleAddProductSubmit = (e) => {
+  const handleAddProductSubmit = async (e) => {
     e.preventDefault();
     if (!newProdName.trim() || !newProdSize.trim()) {
       alert('Product Name matrum Size / Inches kandippa thevai!');
       return;
     }
 
-    addNewProduct({
+    await addNewProduct({
       name: newProdName.trim(),
       category: categoryId,
+      categoryId: categoryId,
       size: newProdSize.trim(),
       price: parseFloat(newProdPrice) || 0,
       stock: parseInt(newProdStock) || 0,
+      stockCount: parseInt(newProdStock) || 0,
       lowStockAlert: parseInt(newProdAlert) || 5,
-      unit: newProdUnit
+      unit: newProdUnit,
+      imageUrl: newProdImageUrl.trim(),
+      imageFile: newProdImageFile
     });
 
     setNewProdName('');
@@ -125,35 +160,48 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
     setNewProdPrice('');
     setNewProdStock('20');
     setNewProdAlert('5');
-    setIsAddProductModalOpen(false);
+    setNewProdImageUrl('');
+    setNewProdImageFile(null);
+    setNewProdImagePreview('');
+    setIsAddDialogOpen(false);
   };
 
-  // Open Edit Product Modal
+  // Open Edit Product
   const handleOpenEditProduct = (product) => {
     setEditingProduct(product);
     setEditProdName(product.name);
     setEditProdSize(product.size || '');
     setEditProdPrice(product.price.toString());
-    setEditProdStock(product.stock.toString());
+    setEditProdStock((product.stock ?? product.stockCount ?? 0).toString());
     setEditProdAlert((product.lowStockAlert || 5).toString());
     setEditProdUnit(product.unit || 'piece');
+    setEditProdImageUrl(product.imageUrl || '');
+    setEditProdImageFile(null);
+    setEditProdImagePreview(product.imageUrl || getProductDefaultImage(product, categoryId));
   };
 
   // Submit Edit Product
-  const handleEditProductSubmit = (e) => {
+  const handleEditProductSubmit = async (e) => {
     e.preventDefault();
     if (!editingProduct || !editProdName.trim()) return;
 
-    updateProduct(editingProduct.id, {
+    await updateProduct(editingProduct.id, {
       name: editProdName.trim(),
+      category: categoryId,
+      categoryId: categoryId,
       size: editProdSize.trim(),
       price: parseFloat(editProdPrice) || 0,
       stock: parseInt(editProdStock) || 0,
+      stockCount: parseInt(editProdStock) || 0,
       lowStockAlert: parseInt(editProdAlert) || 5,
-      unit: editProdUnit
+      unit: editProdUnit,
+      imageUrl: editProdImageUrl.trim(),
+      imageFile: editProdImageFile
     });
 
     setEditingProduct(null);
+    setEditProdImageFile(null);
+    setEditProdImagePreview('');
   };
 
   // Delete Product
@@ -164,494 +212,834 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 pb-32">
-      
-      {/* Top Navigation: Back to Categories & Add Product Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4">
+    <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
+      <Container maxWidth="lg">
         
-        {/* Back Button */}
-        <button
-          onClick={onBackToCategories}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-xs sm:text-sm border border-slate-200 shadow-2xs transition active:scale-95 cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4 text-blue-600" />
-          <span>⬅️ Categories List-ku Po (Back)</span>
-        </button>
+        {/* Navigation & Controls Top Bar */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={onBackToCategories}
+            sx={{
+              borderRadius: 3,
+              borderColor: '#cbd5e1',
+              color: '#1e293b',
+              bgcolor: '#ffffff',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' }
+            }}
+          >
+            ⬅️ Categories List-ku Po (Back)
+          </Button>
 
-        {/* Shop Owner Control: Add Product inside this Category */}
-        <button
-          onClick={() => {
-            // Default size prefix example for screws, bulbs etc.
-            setNewProdName(`${category.name} `);
-            setIsAddProductModalOpen(true);
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setNewProdName(`${category.name} `);
+              setNewProdImageFile(null);
+              setNewProdImageUrl('');
+              setNewProdImagePreview('');
+              setIsAddDialogOpen(true);
+            }}
+            sx={{
+              borderRadius: 3,
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
+            }}
+          >
+            + Pudhu Product Serka ({category.name})
+          </Button>
+        </Box>
+
+        {/* Category Header Banner */}
+        <Paper
+          elevation={2}
+          sx={{
+            p: { xs: 2.5, sm: 3.5 },
+            mb: 3,
+            borderRadius: 4,
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            justifyContent: 'space-between',
+            gap: 2
           }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-blue-600/25 transition active:scale-95 cursor-pointer"
         >
-          <PackagePlus className="w-4 h-4" />
-          <span>+ Pudhu Product Serka ({category.name})</span>
-        </button>
-
-      </div>
-
-      {/* Category Header Banner */}
-      <div className={`p-4 sm:p-5 rounded-3xl bg-gradient-to-r ${category.color || 'from-blue-600 to-indigo-700'} text-white shadow-lg mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shrink-0">
-            <Icon className="w-6 h-6 stroke-[2.2]" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black m-0 text-white leading-tight">
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="h2" sx={{ color: '#ffffff', m: 0 }}>
                 {category.name}
-              </h1>
+              </Typography>
               {category.tamilName && (
-                <span className="text-sm font-bold text-white/80">
+                <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>
                   ({category.tamilName})
-                </span>
+                </Typography>
               )}
-            </div>
-            <p className="text-xs text-white/90 font-medium mt-0.5">
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', mt: 0.5 }}>
               Ellam {category.name} porutkalum sizes / inches-udan keezhe ulladhu
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
 
-        <div className="bg-white/20 backdrop-blur-xs px-3 py-1.5 rounded-xl text-xs font-bold text-white self-start sm:self-auto">
-          {categoryProducts.length} Items Available
-        </div>
-      </div>
+          <Chip
+            label={`${categoryProducts.length} Items Available`}
+            sx={{
+              bgcolor: 'rgba(255,255,255,0.2)',
+              color: '#ffffff',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              backdropFilter: 'blur(4px)'
+            }}
+          />
+        </Paper>
 
-      {/* Search inside this category */}
-      <div className="mb-4">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
+        {/* ⚠️ Low Stock Alert Banner using Material UI Alert component */}
+        {categoryLowStock.length > 0 && (
+          <Alert 
+            severity="warning" 
+            sx={{ mb: 3, borderRadius: 3, border: '1px solid #fde047' }}
+            action={
+              <Chip 
+                label={`${categoryLowStock.length} Low Stock`} 
+                color="warning" 
+                size="small" 
+                sx={{ fontWeight: 800 }} 
+              />
+            }
+          >
+            <AlertTitle sx={{ fontWeight: 800 }}>Low Stock Warning Alert!</AlertTitle>
+            Indha category-il <strong>{categoryLowStock.length} porutkal</strong> stock limit kuraindhadhu. Sarakku stock seiyavum!
+          </Alert>
+        )}
+
+        {/* Search within Category */}
+        <Box sx={{ mb: 3 }}>
+          <TextField
+            fullWidth
+            placeholder={`Search in ${category.name}... (e.g. 1 inch, 2 inch, 1/2", 9W)`}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder={`Search in ${category.name}... (e.g. 1 inch, 2 inch, 1/2", 9W)`}
-            className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+            size="small"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
+              sx: { bgcolor: '#ffffff', borderRadius: 3 }
+            }}
           />
-          {localSearch && (
-            <button
-              onClick={() => setLocalSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 hover:text-slate-700 bg-slate-100 px-2 py-1 rounded"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
+        </Box>
 
-      {/* Products List under this Category */}
-      {categoryProducts.length === 0 ? (
-        <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-slate-300">
-          <Package className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-700">Indha category-il porutkal yedhum illai</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Mela ulla "+ Pudhu Product Serka" button click panni product serunga.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {categoryProducts.map(product => {
-            const inCartQty = getCartQty(product.id);
-            const isLowStock = product.stock <= product.lowStockAlert;
-            const isOutOfStock = product.stock <= 0;
+        {/* Products Grid - Breakpoints: xs=12, sm=6, md=4 */}
+        {categoryProducts.length === 0 ? (
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 6,
+              textAlign: 'center',
+              borderRadius: 4,
+              borderColor: '#cbd5e1',
+              bgcolor: '#ffffff'
+            }}
+          >
+            <InventoryIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#334155' }}>
+              Indha category-il porutkal yedhum illai
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              Mela ulla "+ Pudhu Product Serka" button click panni product serunga.
+            </Typography>
+          </Paper>
+        ) : (
+          <Grid container spacing={3}>
+            {categoryProducts.map((product) => {
+              const inCartQty = getCartQty(product.id);
+              const currentStock = product.stock ?? product.stockCount ?? 0;
+              const isLowStock = currentStock <= (product.lowStockAlert || 5);
+              const isOutOfStock = currentStock <= 0;
+              const displayImg = product.imageUrl || getProductDefaultImage(product, categoryId);
 
-            return (
-              <div
-                key={product.id}
-                className={`bg-white rounded-2xl p-4 border-2 transition-all duration-200 flex flex-col justify-between ${
-                  inCartQty > 0
-                    ? 'border-blue-500 shadow-md ring-2 ring-blue-500/10'
-                    : isLowStock
-                    ? 'border-rose-200 hover:border-rose-300 shadow-2xs'
-                    : 'border-slate-200 hover:border-slate-300 shadow-2xs'
-                }`}
-              >
-                <div>
-                  
-                  {/* Top Row: Category tag, Low Stock Warning & Owner Edit/Delete Controls */}
-                  <div className="flex items-center justify-between gap-1 mb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        {category.name}
-                      </span>
+              return (
+                <Grid 
+                  key={product.id}
+                  size={{ xs: 12, sm: 6, md: 4 }}
+                >
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      borderRadius: 4,
+                      border: inCartQty > 0 
+                        ? '2px solid #2563eb' 
+                        : isLowStock 
+                        ? '1.5px solid #fda4af' 
+                        : '1.5px solid #e2e8f0',
+                      boxShadow: inCartQty > 0 
+                        ? '0 8px 24px rgba(37, 99, 235, 0.18)' 
+                        : '0 2px 8px rgba(15, 23, 42, 0.05)',
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                      bgcolor: '#ffffff',
+                      overflow: 'hidden',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.1)'
+                      }
+                    }}
+                  >
+                    {/* Real Product Image Displayed at the Top using Material UI CardMedia */}
+                    <Box sx={{ position: 'relative', overflow: 'hidden', bgcolor: '#f1f5f9' }}>
+                      <CardMedia
+                        component="img"
+                        image={displayImg}
+                        alt={product.name}
+                        onError={(e) => {
+                          e.target.src = getProductDefaultImage(product, categoryId);
+                        }}
+                        sx={{
+                          height: { xs: 160, sm: 175 },
+                          width: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.35s ease',
+                          '&:hover': {
+                            transform: 'scale(1.05)'
+                          }
+                        }}
+                      />
 
-                      {/* Stock Alert Badge */}
-                      {isOutOfStock ? (
-                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                          Stock Illai (0)
-                        </span>
-                      ) : isLowStock ? (
-                        <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 animate-pulse flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-rose-600" />
-                          Low Stock ({product.stock} left!)
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          Stock: {product.stock}
-                        </span>
-                      )}
-                    </div>
+                      {/* Stock Status Badge on Top-Left of Image */}
+                      <Box sx={{ position: 'absolute', top: 12, left: 12 }}>
+                        {isOutOfStock ? (
+                          <Chip 
+                            label="Stock Illai (0)" 
+                            color="error" 
+                            size="small" 
+                            sx={{ fontWeight: 800, height: 24, fontSize: '0.68rem', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }} 
+                          />
+                        ) : isLowStock ? (
+                          <Chip 
+                            icon={<WarningIcon sx={{ fontSize: '13px !important' }} />}
+                            label={`Low Stock (${currentStock})`} 
+                            color="warning" 
+                            size="small" 
+                            sx={{ fontWeight: 800, height: 24, fontSize: '0.68rem', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }} 
+                          />
+                        ) : (
+                          <Chip 
+                            icon={<CheckIcon sx={{ fontSize: '13px !important' }} />}
+                            label={`Stock: ${currentStock}`} 
+                            color="success" 
+                            size="small" 
+                            sx={{ fontWeight: 800, height: 24, fontSize: '0.68rem', bgcolor: 'rgba(16, 185, 129, 0.95)', color: '#fff', backdropFilter: 'blur(4px)' }} 
+                          />
+                        )}
+                      </Box>
 
-                    {/* Shop Owner Controls: Edit & Delete Product */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenEditProduct(product)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-500 hover:text-blue-700 transition cursor-pointer"
-                        title="Product Vivaram Matra (Edit Product)"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700 transition cursor-pointer"
-                        title="Product-ai Neekka (Delete Product)"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                      {/* Unit Pill on Top-Right of Image */}
+                      <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                        <Chip
+                          label={product.unit ? product.unit.toUpperCase() : 'PCS'}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(15, 23, 42, 0.75)',
+                            backdropFilter: 'blur(4px)',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            height: 22,
+                            fontSize: '0.65rem'
+                          }}
+                        />
+                      </Box>
+                    </Box>
 
-                  </div>
+                    {/* Card Content: Title, Size / Inches info, Shop owner edit/delete */}
+                    <CardContent sx={{ p: 2.5, pb: 1.5, flexGrow: 1 }}>
+                      
+                      {/* Product Title and Owner action icons */}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.3, fontSize: '1rem' }}>
+                          {product.name}
+                        </Typography>
 
-                  {/* Product Title (e.g. Screw 1 inch, Screw 2 inch) */}
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug mb-1">
-                    {product.name}
-                  </h3>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                          <Tooltip title="Product Vivaram & Padam Matra (Edit)">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenEditProduct(product)}
+                              sx={{ color: '#64748b', '&:hover': { color: 'primary.main', bgcolor: '#eff6ff' } }}
+                            >
+                              <EditIcon sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </Tooltip>
 
-                  {/* SIZE / INCHES HIGHLIGHT (Primary Requirement) */}
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-950 border border-amber-200 mb-3 text-xs font-black">
-                    <Tag className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span className="text-amber-700 font-semibold">Size / Inches:</span>
-                    <span>{product.size}</span>
-                  </div>
+                          <Tooltip title="Product-ai Neekka (Delete)">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteProduct(product)}
+                              sx={{ color: '#64748b', '&:hover': { color: 'error.main', bgcolor: '#fef2f2' } }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
 
-                </div>
+                      {/* SIZE / INCHES HIGHLIGHT */}
+                      <Box sx={{ bgcolor: '#fffbeb', border: '1px solid #fde68a', p: 1, px: 1.5, borderRadius: 2, display: 'inline-flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <TagIcon sx={{ fontSize: 16, color: '#d97706' }} />
+                        <Typography variant="caption" sx={{ fontWeight: 800, color: '#92400e' }}>
+                          Size / Inches: <Typography component="span" sx={{ fontWeight: 900, color: '#78350f', fontSize: '0.82rem' }}>{product.size}</Typography>
+                        </Typography>
+                      </Box>
 
-                {/* Bottom Row: Rate & Add to Bill Controller */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 mt-2">
-                  <div>
-                    <div className="text-[10px] text-slate-400 font-medium">Vilai (Rate)</div>
-                    <div className="text-lg sm:text-xl font-black text-slate-900">
-                      ₹{product.price.toLocaleString('en-IN')}
-                    </div>
-                  </div>
+                    </CardContent>
 
-                  {/* Add to Bill Button */}
-                  <div>
-                    {inCartQty > 0 ? (
-                      <div className="flex items-center bg-blue-50 border border-blue-200 rounded-xl p-0.5 shadow-2xs">
-                        <button
-                          onClick={() => updateCartQty(product.id, inCartQty - 1)}
-                          className="w-8 h-8 rounded-lg bg-white text-blue-700 hover:bg-blue-100 flex items-center justify-center font-bold transition shadow-2xs cursor-pointer"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-8 text-center font-bold text-blue-900 text-sm">
-                          {inCartQty}
-                        </span>
-                        <button
-                          onClick={() => addToCart(product, 1)}
-                          disabled={product.stock <= inCartQty}
-                          className="w-8 h-8 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center font-bold transition shadow-2xs cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => addToCart(product, 1)}
-                        disabled={isOutOfStock}
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs sm:text-sm font-bold transition shadow-md shadow-blue-500/25 active:scale-95 cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>+ Bill-la Serka</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+                    <Divider sx={{ borderColor: '#f1f5f9' }} />
 
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    {/* Card Actions: Vilai (Rate) & Add to Bill / Qty Counter */}
+                    <CardActions sx={{ p: 2, px: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#fafafa' }}>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1 }}>
+                          Vilai (Rate)
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', mt: 0.3, fontSize: '1.25rem' }}>
+                          ₹{product.price.toLocaleString('en-IN')}
+                        </Typography>
+                      </Box>
 
-      {/* MODAL 1: ADD New Product under this Category */}
-      {isAddProductModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                <PackagePlus className="w-5 h-5 text-blue-400" />
-                <span>Pudhu Product Serka ({category.name})</span>
-              </h3>
-              <button
-                onClick={() => setIsAddProductModalOpen(false)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                      {/* Cart Add / Quantity Selector */}
+                      <Box>
+                        {inCartQty > 0 ? (
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              bgcolor: 'primary.light',
+                              border: '1px solid #93c5fd',
+                              borderRadius: 2.5,
+                              p: 0.3
+                            }}
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={() => updateCartQty(product.id, inCartQty - 1)}
+                              sx={{ bgcolor: '#ffffff', color: 'primary.dark', p: 0.5, '&:hover': { bgcolor: '#f1f5f9' } }}
+                            >
+                              <RemoveIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                            <Typography sx={{ width: 32, textAlign: 'center', fontWeight: 900, fontSize: '0.9rem', color: '#1e3a8a' }}>
+                              {inCartQty}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={() => addToCart(product, 1)}
+                              disabled={currentStock <= inCartQty}
+                              sx={{ bgcolor: 'primary.main', color: '#ffffff', p: 0.5, '&:hover': { bgcolor: 'primary.dark' } }}
+                            >
+                              <AddIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Paper>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<AddIcon />}
+                            disabled={isOutOfStock}
+                            onClick={() => addToCart(product, 1)}
+                            sx={{
+                              borderRadius: 2.5,
+                              fontWeight: 800,
+                              fontSize: '0.8rem',
+                              px: 2,
+                              py: 0.8,
+                              boxShadow: 'none'
+                            }}
+                          >
+                            + Bill-la Serka
+                          </Button>
+                        )}
+                      </Box>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+        )}
 
-            <form onSubmit={handleAddProductSubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newProdName}
-                  onChange={(e) => setNewProdName(e.target.value)}
-                  placeholder={`e.g. ${category.name} 1 inch`}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+        {/* MODAL 1: ADD New Product Dialog with Image Upload */}
+        <Dialog 
+          open={isAddDialogOpen} 
+          onClose={() => setIsAddDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+        >
+          <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AddIcon sx={{ color: '#38bdf8' }} />
+              <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#fff' }}>
+                Pudhu Product Serka ({category.name})
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setIsAddDialogOpen(false)} sx={{ color: '#94a3b8' }}>
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Size / Inches (அளவு) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newProdSize}
-                  onChange={(e) => setNewProdSize(e.target.value)}
-                  placeholder="e.g. 1 inch, 2 inch, 1/2 inch, 9W, 1 HP, 6201 ZZ"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+          <Box component="form" onSubmit={handleAddProductSubmit}>
+            <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                required
+                fullWidth
+                label="Product Name *"
+                placeholder={`e.g. ${category.name} 1 inch`}
+                value={newProdName}
+                onChange={(e) => setNewProdName(e.target.value)}
+                size="small"
+              />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Vilai / Price (₹) *
-                  </label>
-                  <input
-                    type="number"
+              <TextField
+                required
+                fullWidth
+                label="Size / Inches (அளவு) *"
+                placeholder="e.g. 1 inch, 2 inch, 1/2 inch, 9W, 1 HP, 6201 ZZ"
+                value={newProdSize}
+                onChange={(e) => setNewProdSize(e.target.value)}
+                size="small"
+              />
+
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
                     required
-                    min="0"
+                    fullWidth
+                    type="number"
+                    label="Vilai / Price (₹) *"
+                    placeholder="70"
                     value={newProdPrice}
                     onChange={(e) => setNewProdPrice(e.target.value)}
-                    placeholder="e.g. 70"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    size="small"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Unit Type
-                  </label>
-                  <select
-                    value={newProdUnit}
-                    onChange={(e) => setNewProdUnit(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold"
-                  >
-                    <option value="piece">Piece (Pcs)</option>
-                    <option value="box">Box</option>
-                    <option value="pkt">Packet</option>
-                    <option value="roll">Roll</option>
-                    <option value="coil">Coil</option>
-                  </select>
-                </div>
-              </div>
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Unit Type</InputLabel>
+                    <Select
+                      value={newProdUnit}
+                      label="Unit Type"
+                      onChange={(e) => setNewProdUnit(e.target.value)}
+                    >
+                      <MenuItem value="piece">Piece (Pcs)</MenuItem>
+                      <MenuItem value="box">Box</MenuItem>
+                      <MenuItem value="pkt">Packet</MenuItem>
+                      <MenuItem value="roll">Roll</MenuItem>
+                      <MenuItem value="coil">Coil</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Initial Stock Count
-                  </label>
-                  <input
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
                     type="number"
-                    min="0"
+                    label="Initial Stock Count"
                     value={newProdStock}
                     onChange={(e) => setNewProdStock(e.target.value)}
-                    placeholder="20"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-black text-slate-900"
+                    size="small"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Low Stock Alert Limit
-                  </label>
-                  <input
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
                     type="number"
-                    min="1"
+                    label="Low Stock Warning Limit"
                     value={newProdAlert}
                     onChange={(e) => setNewProdAlert(e.target.value)}
-                    placeholder="5"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900"
+                    size="small"
                   />
-                </div>
-              </div>
+                </Grid>
+              </Grid>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddProductModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
-                  Product Save Pannu
-                </button>
-              </div>
+              {/* IMAGE UPLOAD & IMAGE URL SECTION */}
+              <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
+                  Product Padam / Image (Real Photo)
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{
+                      borderRadius: 2.5,
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      borderColor: '#94a3b8',
+                      color: '#1e293b'
+                    }}
+                  >
+                    Padam Upload Pannu (Choose File)
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleAddFileChange}
+                    />
+                  </Button>
 
-            </form>
+                  {newProdImageFile && (
+                    <Chip
+                      label={newProdImageFile.name}
+                      onDelete={() => {
+                        setNewProdImageFile(null);
+                        setNewProdImagePreview('');
+                      }}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 700 }}
+                    />
+                  )}
+                </Box>
 
-          </div>
-        </div>
-      )}
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Alladhu Padam URL Link (Unsplash / Web URL)"
+                  placeholder="https://images.unsplash.com/..."
+                  value={newProdImageUrl}
+                  onChange={(e) => {
+                    setNewProdImageUrl(e.target.value);
+                    if (!newProdImageFile) setNewProdImagePreview(e.target.value);
+                  }}
+                  helperText="Device file upload alladhu direct image link renderil ondrai select pannalam."
+                />
 
-      {/* MODAL 2: UPDATE Product Details */}
-      {editingProduct && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
-              <h3 className="text-base font-bold m-0 flex items-center gap-2">
-                <Edit2 className="w-4 h-4 text-blue-400" />
-                <span>Product Vivaram Matra (Update Product)</span>
-              </h3>
-              <button
-                onClick={() => setEditingProduct(null)}
-                className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+                {/* Live Preview Box */}
+                {newProdImagePreview && (
+                  <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                    <Box
+                      component="img"
+                      src={newProdImagePreview}
+                      alt="Product preview"
+                      sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setNewProdImageFile(null);
+                        setNewProdImageUrl('');
+                        setNewProdImagePreview('');
+                      }}
+                      sx={{
+                        position: 'absolute',
+                        top: 6,
+                        right: 6,
+                        bgcolor: 'rgba(0,0,0,0.65)',
+                        color: '#ffffff',
+                        '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                )}
+              </Box>
 
-            <form onSubmit={handleEditProductSubmit} className="p-5 space-y-3.5">
-              
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
+            </DialogContent>
+
+            <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+              <Button onClick={() => setIsAddDialogOpen(false)} sx={{ color: '#64748b' }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary" sx={{ fontWeight: 800 }}>
+                Product Save Pannu
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+
+        {/* MODAL 2: UPDATE Product Dialog with Image Change */}
+        {editingProduct && (
+          <Dialog 
+            open={Boolean(editingProduct)} 
+            onClose={() => setEditingProduct(null)}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{ sx: { borderRadius: 4, p: 0.5 } }}
+          >
+            <DialogTitle sx={{ m: 0, p: 2.5, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <EditIcon sx={{ color: '#38bdf8' }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1rem', color: '#fff' }}>
+                  Product Vivaram & Padam Matra (Update)
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setEditingProduct(null)} sx={{ color: '#94a3b8' }}>
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+
+            <Box component="form" onSubmit={handleEditProductSubmit}>
+              <DialogContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
                   required
+                  fullWidth
+                  label="Product Name *"
                   value={editProdName}
                   onChange={(e) => setEditProdName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Size / Inches (அளவு) *
-                </label>
-                <input
-                  type="text"
+                <TextField
                   required
+                  fullWidth
+                  label="Size / Inches (அளவு) *"
                   value={editProdSize}
                   onChange={(e) => setEditProdSize(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  size="small"
                 />
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Vilai / Price (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    value={editProdPrice}
-                    onChange={(e) => setEditProdPrice(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-black text-slate-900"
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField
+                      required
+                      fullWidth
+                      type="number"
+                      label="Vilai / Price (₹) *"
+                      value={editProdPrice}
+                      onChange={(e) => setEditProdPrice(e.target.value)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Unit Type</InputLabel>
+                      <Select
+                        value={editProdUnit}
+                        label="Unit Type"
+                        onChange={(e) => setEditProdUnit(e.target.value)}
+                      >
+                        <MenuItem value="piece">Piece (Pcs)</MenuItem>
+                        <MenuItem value="box">Box</MenuItem>
+                        <MenuItem value="pkt">Packet</MenuItem>
+                        <MenuItem value="roll">Roll</MenuItem>
+                        <MenuItem value="coil">Coil</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Stock Count"
+                      value={editProdStock}
+                      onChange={(e) => setEditProdStock(e.target.value)}
+                      size="small"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Low Stock Warning Limit"
+                      value={editProdAlert}
+                      onChange={(e) => setEditProdAlert(e.target.value)}
+                      size="small"
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* EDIT IMAGE UPLOAD & IMAGE URL SECTION */}
+                <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 3, border: '1px dashed #cbd5e1' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ImageIcon sx={{ fontSize: 18, color: '#2563eb' }} />
+                    Product Padam Matra (Change Image / Photo)
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center', mb: 1.5 }}>
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      sx={{
+                        borderRadius: 2.5,
+                        fontWeight: 700,
+                        fontSize: '0.8rem',
+                        borderColor: '#94a3b8',
+                        color: '#1e293b'
+                      }}
+                    >
+                      Pudhu Padam Upload (Choose File)
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handleEditFileChange}
+                      />
+                    </Button>
+
+                    {editProdImageFile && (
+                      <Chip
+                        label={editProdImageFile.name}
+                        onDelete={() => {
+                          setEditProdImageFile(null);
+                          setEditProdImagePreview(editProdImageUrl || getProductDefaultImage(editingProduct, categoryId));
+                        }}
+                        color="primary"
+                        size="small"
+                        sx={{ fontWeight: 700 }}
+                      />
+                    )}
+                  </Box>
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Padam URL Link"
+                    placeholder="https://images.unsplash.com/..."
+                    value={editProdImageUrl}
+                    onChange={(e) => {
+                      setEditProdImageUrl(e.target.value);
+                      if (!editProdImageFile) setEditProdImagePreview(e.target.value);
+                    }}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Stock Count
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editProdStock}
-                    onChange={(e) => setEditProdStock(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-black text-slate-900"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Low Stock Warning Alert Limit
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={editProdAlert}
-                  onChange={(e) => setEditProdAlert(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-900"
-                />
-              </div>
+                  {/* Preview Box */}
+                  {editProdImagePreview && (
+                    <Box sx={{ mt: 1.5, position: 'relative', width: '100%', height: 140, borderRadius: 2.5, overflow: 'hidden', border: '1.5px solid #cbd5e1' }}>
+                      <Box
+                        component="img"
+                        src={editProdImagePreview}
+                        alt="Product preview"
+                        sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setEditProdImageFile(null);
+                          setEditProdImageUrl('');
+                          setEditProdImagePreview('');
+                        }}
+                        sx={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          bgcolor: 'rgba(0,0,0,0.65)',
+                          color: '#ffffff',
+                          '&:hover': { bgcolor: 'rgba(0,0,0,0.85)' }
+                        }}
+                      >
+                        <CloseIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Box>
+              </DialogContent>
 
-              <div className="pt-2 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold text-xs"
-                >
+              <DialogActions sx={{ p: 2.5, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                <Button onClick={() => setEditingProduct(null)} sx={{ color: '#64748b' }}>
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/30 transition cursor-pointer"
-                >
+                </Button>
+                <Button type="submit" variant="contained" color="primary" sx={{ fontWeight: 800 }}>
                   Save Changes (மாற்றங்களை சேமி)
-                </button>
-              </div>
+                </Button>
+              </DialogActions>
+            </Box>
+          </Dialog>
+        )}
 
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* Sticky Bottom Floating Bill Bar (Total Amount displayed at bottom) */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-14 sm:bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-40 bg-slate-950 text-white rounded-2xl p-3 sm:p-4 shadow-2xl border border-slate-800 backdrop-blur-md animate-in slide-in-from-bottom-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="relative p-2.5 rounded-xl bg-amber-400 text-slate-950">
-                <ShoppingCart className="w-5 h-5" />
-                <span className="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center border-2 border-slate-950">
-                  {cartTotalItems}
-                </span>
-              </div>
-              <div>
-                <div className="text-[11px] text-slate-400 font-medium">
+        {/* Floating Bottom Cart / Bill Total Bar (Material UI Paper) */}
+        {cart.length > 0 && (
+          <Paper
+            elevation={10}
+            sx={{
+              position: 'fixed',
+              bottom: { xs: 70, sm: 24 },
+              left: { xs: 16, sm: 'auto' },
+              right: { xs: 16, sm: 28 },
+              maxWidth: { sm: 420 },
+              width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+              zIndex: 40,
+              bgcolor: '#0f172a',
+              color: '#ffffff',
+              borderRadius: 4,
+              p: 2,
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ position: 'relative', width: 44, height: 44, borderRadius: 3, bgcolor: '#f59e0b', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CartIcon />
+                <Chip
+                  label={cartTotalItems}
+                  color="error"
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    top: -6,
+                    right: -6,
+                    height: 20,
+                    minWidth: 20,
+                    fontWeight: 900,
+                    fontSize: '0.65rem'
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', lineHeight: 1.1 }}>
                   {cart.length} Items • Moththa Bill:
-                </div>
-                <div className="text-base sm:text-xl font-black text-amber-400">
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: '#fbbf24', lineHeight: 1.2 }}>
                   ₹{cartSubtotal.toLocaleString('en-IN')}
-                </div>
-              </div>
-            </div>
+                </Typography>
+              </Box>
+            </Box>
 
-            <button
+            <Button
+              variant="contained"
+              color="success"
+              endIcon={<ArrowForwardIcon />}
               onClick={onOpenCheckout}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 transition active:scale-95 cursor-pointer"
+              sx={{
+                px: 2.5,
+                py: 1,
+                borderRadius: 3,
+                fontWeight: 900,
+                fontSize: '0.875rem',
+                bgcolor: '#10b981',
+                '&:hover': { bgcolor: '#059669' }
+              }}
             >
-              <span>Bill Podu</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+              Bill Podu
+            </Button>
+          </Paper>
+        )}
 
-    </div>
+      </Container>
+    </Box>
   );
 }

@@ -1,5 +1,30 @@
 // Initial categories and pre-populated catalog for NP Electricals
 
+export const DEFAULT_CATEGORY_IMAGES = {
+  bulb: 'https://images.unsplash.com/photo-1550537687-c91072c4792d?w=600&auto=format&fit=crop&q=80',
+  holder: 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?w=600&auto=format&fit=crop&q=80',
+  screw: 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=600&auto=format&fit=crop&q=80',
+  bend_elbow: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=600&auto=format&fit=crop&q=80',
+  motor: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80',
+  switch: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80',
+  tap: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=80',
+  ball_valve: 'https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=600&auto=format&fit=crop&q=80',
+  bearing: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&auto=format&fit=crop&q=80',
+  other: 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?w=600&auto=format&fit=crop&q=80'
+};
+
+export const getCategoryDefaultImage = (categoryId) => {
+  return DEFAULT_CATEGORY_IMAGES[categoryId] || DEFAULT_CATEGORY_IMAGES.other;
+};
+
+export const getProductDefaultImage = (product, categoryId) => {
+  if (product && product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim()) {
+    return product.imageUrl;
+  }
+  const cat = (product && (product.category || product.categoryId)) || categoryId || 'other';
+  return getCategoryDefaultImage(cat);
+};
+
 export const CATEGORIES = [
   { 
     id: 'bulb', 
@@ -10,7 +35,8 @@ export const CATEGORIES = [
     color: 'from-amber-500 to-yellow-500',
     bgLight: 'bg-amber-50',
     borderLight: 'border-amber-200',
-    textAccent: 'text-amber-700'
+    textAccent: 'text-amber-700',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.bulb
   },
   { 
     id: 'holder', 
@@ -21,7 +47,8 @@ export const CATEGORIES = [
     color: 'from-blue-500 to-indigo-600',
     bgLight: 'bg-blue-50',
     borderLight: 'border-blue-200',
-    textAccent: 'text-blue-700'
+    textAccent: 'text-blue-700',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.holder
   },
   { 
     id: 'screw', 
@@ -32,7 +59,8 @@ export const CATEGORIES = [
     color: 'from-slate-600 to-zinc-800',
     bgLight: 'bg-slate-50',
     borderLight: 'border-slate-300',
-    textAccent: 'text-slate-800'
+    textAccent: 'text-slate-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.screw
   },
   { 
     id: 'bend_elbow', 
@@ -43,7 +71,8 @@ export const CATEGORIES = [
     color: 'from-cyan-500 to-blue-600',
     bgLight: 'bg-cyan-50',
     borderLight: 'border-cyan-200',
-    textAccent: 'text-cyan-800'
+    textAccent: 'text-cyan-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.bend_elbow
   },
   { 
     id: 'motor', 
@@ -54,7 +83,8 @@ export const CATEGORIES = [
     color: 'from-emerald-500 to-teal-700',
     bgLight: 'bg-emerald-50',
     borderLight: 'border-emerald-200',
-    textAccent: 'text-emerald-800'
+    textAccent: 'text-emerald-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.motor
   },
   { 
     id: 'switch', 
@@ -65,7 +95,8 @@ export const CATEGORIES = [
     color: 'from-violet-500 to-purple-700',
     bgLight: 'bg-violet-50',
     borderLight: 'border-violet-200',
-    textAccent: 'text-violet-800'
+    textAccent: 'text-violet-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.switch
   },
   { 
     id: 'tap', 
@@ -76,7 +107,8 @@ export const CATEGORIES = [
     color: 'from-sky-500 to-blue-600',
     bgLight: 'bg-sky-50',
     borderLight: 'border-sky-200',
-    textAccent: 'text-sky-800'
+    textAccent: 'text-sky-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.tap
   },
   { 
     id: 'ball_valve', 
@@ -87,7 +119,8 @@ export const CATEGORIES = [
     color: 'from-orange-500 to-red-600',
     bgLight: 'bg-orange-50',
     borderLight: 'border-orange-200',
-    textAccent: 'text-orange-800'
+    textAccent: 'text-orange-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.ball_valve
   },
   { 
     id: 'bearing', 
@@ -98,7 +131,8 @@ export const CATEGORIES = [
     color: 'from-amber-600 to-orange-700',
     bgLight: 'bg-amber-50',
     borderLight: 'border-amber-300',
-    textAccent: 'text-amber-800'
+    textAccent: 'text-amber-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.bearing
   },
   { 
     id: 'other', 
@@ -109,7 +143,8 @@ export const CATEGORIES = [
     color: 'from-rose-500 to-pink-600',
     bgLight: 'bg-rose-50',
     borderLight: 'border-rose-200',
-    textAccent: 'text-rose-800'
+    textAccent: 'text-rose-800',
+    imageUrl: DEFAULT_CATEGORY_IMAGES.other
   }
 ];
 

@@ -1,17 +1,27 @@
 import React from 'react';
 import { useShop } from '../../context/ShopContext';
-import { 
-  X, 
-  Printer, 
-  Share2, 
-  CheckCircle2, 
-  AlertCircle, 
-  Phone, 
-  Calendar, 
-  FileText, 
-  Receipt,
-  Download
-} from 'lucide-react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Button,
+  IconButton,
+  Box,
+  Paper,
+  Divider,
+  Alert,
+  Chip
+} from '@mui/material';
+import {
+  Close as CloseIcon,
+  Receipt as ReceiptIcon,
+  Print as PrintIcon,
+  Share as ShareIcon,
+  CheckCircle as CheckIcon,
+  WarningAmber as WarningIcon
+} from '@mui/icons-material';
 
 export default function ReceiptModal() {
   const { 
@@ -34,7 +44,7 @@ export default function ReceiptModal() {
     minute: '2-digit'
   });
 
-  // WhatsApp share message
+  // WhatsApp share
   const handleWhatsAppShare = () => {
     let itemsText = bill.items
       .map((item, idx) => `${idx + 1}. ${item.name} (${item.size}) - ${item.qty} pcs x ₹${item.price} = ₹${item.total}`)
@@ -61,151 +71,153 @@ export default function ReceiptModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
-        
-        {/* Modal Top Actions */}
-        <div className="bg-slate-900 text-white p-3 sm:p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-amber-400" />
-            <span className="text-xs sm:text-sm font-bold">Bill Receipt Generated</span>
-          </div>
-          <button
-            onClick={() => setShowReceiptModal(false)}
-            className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <Dialog
+      open={showReceiptModal}
+      onClose={() => setShowReceiptModal(false)}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+    >
+      <DialogTitle sx={{ m: 0, p: 2, bgcolor: '#0f172a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ReceiptIcon sx={{ color: '#f59e0b' }} />
+          <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#ffffff' }}>
+            Bill Receipt Generated
+          </Typography>
+        </Box>
+        <IconButton onClick={() => setShowReceiptModal(false)} sx={{ color: '#94a3b8' }}>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
 
-        {/* Printable Receipt Paper */}
-        <div id="printable-bill" className="p-4 sm:p-6 bg-white font-mono text-slate-900 text-xs sm:text-sm">
-          
+      <DialogContent sx={{ p: 3, bgcolor: '#ffffff' }}>
+        {/* Printable Thermal Receipt Paper */}
+        <Paper
+          id="printable-bill"
+          variant="outlined"
+          sx={{
+            p: 3,
+            borderRadius: 3,
+            bgcolor: '#ffffff',
+            borderColor: '#e2e8f0',
+            fontFamily: 'Roboto, monospace'
+          }}
+        >
           {/* Shop Header */}
-          <div className="text-center border-b border-dashed border-slate-400 pb-3 mb-3">
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 mb-0 font-sans">
+          <Box sx={{ textAlign: 'center', pb: 2, mb: 2, borderBottom: '1px dashed #94a3b8' }}>
+            <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', m: 0 }}>
               NP ELECTRICALS
-            </h1>
-            <p className="text-[11px] text-slate-600 font-sans font-medium mt-0.5">
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#475569', fontWeight: 600, display: 'block', mt: 0.5 }}>
               Electrical & Plumbing Hardware Store
-            </p>
-            <p className="text-[10px] text-slate-500 font-sans">
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
               Main Road, Bus Stand Near • Ph: 98401 00000
-            </p>
-          </div>
+            </Typography>
+          </Box>
 
-          {/* Bill Meta */}
-          <div className="flex justify-between items-start text-[11px] border-b border-slate-200 pb-2 mb-3">
-            <div>
-              <div><strong className="font-bold">Bill No:</strong> {bill.id}</div>
-              <div><strong className="font-bold">Date:</strong> {billDate}</div>
-            </div>
-            <div className="text-right">
-              <div><strong className="font-bold">Cust:</strong> {bill.customerName}</div>
-              <div><strong className="font-bold">Phone:</strong> {bill.customerPhone}</div>
-              {bill.customerAddress && (
-                <div className="text-[10px] text-slate-500 truncate max-w-[150px]">
-                  {bill.customerAddress}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Meta Details */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', pb: 1.5, mb: 1.5, borderBottom: '1px solid #f1f5f9', fontSize: '0.78rem' }}>
+            <Box>
+              <Typography variant="caption" sx={{ display: 'block' }}><strong>Bill No:</strong> {bill.id}</Typography>
+              <Typography variant="caption" sx={{ display: 'block' }}><strong>Date:</strong> {billDate}</Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" sx={{ display: 'block' }}><strong>Customer:</strong> {bill.customerName}</Typography>
+              <Typography variant="caption" sx={{ display: 'block' }}><strong>Phone:</strong> {bill.customerPhone}</Typography>
+            </Box>
+          </Box>
 
-          {/* Items Table */}
-          <div className="mb-3">
-            <div className="flex justify-between font-bold border-b border-slate-300 pb-1 text-[11px] uppercase">
-              <span className="flex-1">Item (Size / Inches)</span>
-              <span className="w-10 text-center">Qty</span>
-              <span className="w-14 text-right">Rate</span>
-              <span className="w-16 text-right">Total</span>
-            </div>
+          {/* Items Header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase', pb: 0.5, borderBottom: '1px solid #cbd5e1' }}>
+            <Box sx={{ flex: 1 }}>Item (Size / Inches)</Box>
+            <Box sx={{ width: 36, textAlign: 'center' }}>Qty</Box>
+            <Box sx={{ width: 50, textAlign: 'right' }}>Rate</Box>
+            <Box sx={{ width: 60, textAlign: 'right' }}>Total</Box>
+          </Box>
 
-            <div className="divide-y divide-slate-100 py-1 space-y-1">
-              {bill.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[11px] pt-1">
-                  <div className="flex-1 pr-1 font-sans">
-                    <div className="font-bold text-slate-900 leading-tight">{item.name}</div>
-                    <div className="text-[10px] text-amber-800 font-medium">Size: {item.size}</div>
-                  </div>
-                  <div className="w-10 text-center font-bold">{item.qty}</div>
-                  <div className="w-14 text-right">₹{item.price}</div>
-                  <div className="w-16 text-right font-black">₹{item.total}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Items List */}
+          <Box sx={{ py: 1, display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+            {bill.items.map((item, idx) => (
+              <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                <Box sx={{ flex: 1, pr: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b' }}>
+                    {item.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#b45309', fontWeight: 600 }}>
+                    Size: {item.size}
+                  </Typography>
+                </Box>
+                <Box sx={{ width: 36, textAlign: 'center', fontWeight: 700 }}>{item.qty}</Box>
+                <Box sx={{ width: 50, textAlign: 'right', color: '#64748b' }}>₹{item.price}</Box>
+                <Box sx={{ width: 60, textAlign: 'right', fontWeight: 900 }}>₹{item.total}</Box>
+              </Box>
+            ))}
+          </Box>
 
           {/* Subtotal & Total */}
-          <div className="border-t-2 border-dashed border-slate-400 pt-2 mb-3 space-y-1">
-            <div className="flex justify-between items-center text-sm font-black font-sans">
-              <span>Moththa Bill Amount:</span>
-              <span className="text-base text-slate-900">₹{bill.total.toLocaleString('en-IN')}</span>
-            </div>
-          </div>
+          <Box sx={{ pt: 1.5, mt: 1, borderTop: '2px dashed #94a3b8' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>
+                Moththa Bill Amount:
+              </Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
+                ₹{bill.total.toLocaleString('en-IN')}
+              </Typography>
+            </Box>
+          </Box>
 
-          {/* Payment Status Badge in Receipt */}
-          <div className="my-3 p-2.5 rounded-xl border text-center font-sans">
+          {/* Payment Status Alert Box */}
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
             {isCredit ? (
-              <div className="bg-rose-50 border-rose-300 text-rose-800 rounded-lg p-2">
-                <div className="flex items-center justify-center gap-1.5 font-black text-xs sm:text-sm">
-                  <AlertCircle className="w-4 h-4 text-rose-600" />
-                  <span>CREDIT BILL (கடன் கணக்கு)</span>
-                </div>
-                <div className="text-[11px] font-bold mt-0.5">
-                  Balance Owed: ₹{bill.total.toLocaleString('en-IN')}
-                </div>
-                <div className="text-[10px] text-rose-600">
-                  Customer Database-il Kadan Save Aaiduchu
-                </div>
-              </div>
+              <Alert severity="warning" sx={{ borderRadius: 2, justifyContent: 'center' }}>
+                <strong>CREDIT BILL (கடன் கணக்கு)</strong>
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.3 }}>
+                  Balance Owed: ₹{bill.total.toLocaleString('en-IN')} • Customer Database-il Save Aaiduchu
+                </Typography>
+              </Alert>
             ) : (
-              <div className="bg-emerald-50 border-emerald-300 text-emerald-800 rounded-lg p-2">
-                <div className="flex items-center justify-center gap-1.5 font-black text-xs sm:text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>AMOUNT SETTLED (பணம் பெறப்பட்டது)</span>
-                </div>
-                <div className="text-[11px] font-bold mt-0.5">
+              <Alert severity="success" sx={{ borderRadius: 2, justifyContent: 'center' }}>
+                <strong>AMOUNT SETTLED (பணம் பெறப்பட்டது)</strong>
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.3 }}>
                   Payment Mode: {bill.paymentMode} • Settled on {billDate}
-                </div>
-              </div>
+                </Typography>
+              </Alert>
             )}
-          </div>
+          </Box>
 
-          {/* Thank You Note */}
-          <div className="text-center text-[10px] text-slate-500 font-sans border-t border-slate-200 pt-2">
+          <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 2, color: 'text.secondary' }}>
             🙏 நன்றி! மீண்டும் வருக! (Thank you! Visit again!) 🙏
-          </div>
+          </Typography>
+        </Paper>
+      </DialogContent>
 
-        </div>
-
-        {/* Modal Action Buttons (WhatsApp, Print, Done) */}
-        <div className="bg-slate-100 p-3 sm:p-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-          
-          <button
-            onClick={handleWhatsAppShare}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm transition cursor-pointer shadow-md shadow-emerald-600/20"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>WhatsApp-la Anupu</span>
-          </button>
-
-          <button
-            onClick={handlePrint}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm transition cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Bill</span>
-          </button>
-
-          <button
-            onClick={() => setShowReceiptModal(false)}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-200 font-bold text-xs sm:text-sm transition cursor-pointer"
-          >
-            Mudindhadhu (Close)
-          </button>
-        </div>
-
-      </div>
-    </div>
+      <DialogActions sx={{ p: 2, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+        <Button
+          variant="contained"
+          color="success"
+          startIcon={<ShareIcon />}
+          onClick={handleWhatsAppShare}
+          sx={{ flex: 1, borderRadius: 2.5, fontWeight: 800, fontSize: '0.8rem' }}
+        >
+          WhatsApp Share
+        </Button>
+        <Button
+          variant="contained"
+          color="inherit"
+          startIcon={<PrintIcon />}
+          onClick={handlePrint}
+          sx={{ flex: 1, borderRadius: 2.5, fontWeight: 800, fontSize: '0.8rem', bgcolor: '#1e293b', color: '#fff', '&:hover': { bgcolor: '#0f172a' } }}
+        >
+          Print Bill
+        </Button>
+        <Button
+          onClick={() => setShowReceiptModal(false)}
+          sx={{ color: '#64748b', borderRadius: 2.5, fontWeight: 700 }}
+        >
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

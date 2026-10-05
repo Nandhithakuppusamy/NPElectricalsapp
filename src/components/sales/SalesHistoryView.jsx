@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
 import { useShop } from '../../context/ShopContext';
-import { 
-  BarChart3, 
-  Search, 
-  Calendar, 
-  CreditCard, 
-  Banknote, 
-  QrCode, 
-  Receipt, 
-  Printer, 
-  Share2, 
-  Eye, 
-  TrendingUp, 
-  CheckCircle2, 
-  AlertCircle,
-  Filter
-} from 'lucide-react';
+import {
+  Box,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  IconButton,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TableContainer,
+  Paper,
+  Chip,
+  TextField,
+  InputAdornment,
+  Tooltip
+} from '@mui/material';
+import {
+  QueryStats as SalesIcon,
+  Search as SearchIcon,
+  CalendarMonth as CalendarIcon,
+  Payments as CashIcon,
+  QrCode as UpiIcon,
+  CreditCard as CreditIcon,
+  Visibility as ViewIcon,
+  TrendingUp as TrendingUpIcon,
+  CheckCircle as CheckIcon,
+  WarningAmber as WarningIcon,
+  Receipt as ReceiptIcon
+} from '@mui/icons-material';
 
 export default function SalesHistoryView() {
   const { 
@@ -46,21 +64,21 @@ export default function SalesHistoryView() {
   });
 
   // KPI Calculations
-  const totalRevenue = bills.reduce((sum, b) => sum + (b.total || 0), 0);
+  const totalRevenue = bills.reduce((sum, b) => sum + (b.total || b.amount || 0), 0);
   const settledRevenue = bills
-    .filter(b => b.isSettled)
-    .reduce((sum, b) => sum + (b.total || 0), 0);
-  const totalCreditOwed = customers.reduce((sum, c) => sum + (c.balanceOwed || 0), 0);
+    .filter(b => b.isSettled || b.paymentMode !== 'Credit')
+    .reduce((sum, b) => sum + (b.total || b.amount || 0), 0);
+  const totalCreditOwed = customers.reduce((sum, c) => sum + (c.balanceOwed !== undefined ? c.balanceOwed : (c.balance || 0)), 0);
 
   const todaysBills = bills.filter(b => b.date && b.date.slice(0, 10) === todayStr);
-  const todaysRevenue = todaysBills.reduce((sum, b) => sum + (b.total || 0), 0);
+  const todaysRevenue = todaysBills.reduce((sum, b) => sum + (b.total || b.amount || 0), 0);
 
   const cashRevenue = bills
     .filter(b => b.paymentMode === 'Cash')
-    .reduce((sum, b) => sum + (b.total || 0), 0);
+    .reduce((sum, b) => sum + (b.total || b.amount || 0), 0);
   const upiRevenue = bills
     .filter(b => b.paymentMode === 'UPI')
-    .reduce((sum, b) => sum + (b.total || 0), 0);
+    .reduce((sum, b) => sum + (b.total || b.amount || 0), 0);
 
   // View Receipt
   const handleViewReceipt = (bill) => {
@@ -69,179 +87,216 @@ export default function SalesHistoryView() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 pb-28 sm:pb-24">
-      
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2 m-0">
-            <BarChart3 className="w-6 h-6 text-blue-600" />
-            <span>Kadai Virpanai & Sales History (Shop View)</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Moththa virpanai, Cash/UPI vasool, kadan bill-gal matrum receipt vivaram
-          </p>
-        </div>
-      </div>
-
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+    <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
+      <Container maxWidth="lg">
         
-        {/* Today's Sales */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-lg shadow-blue-600/20">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-blue-100 flex items-center justify-between">
-            <span>Inraiya Virpanai</span>
-            <TrendingUp className="w-4 h-4 text-amber-300" />
-          </div>
-          <div className="text-xl sm:text-2xl font-black mt-2">
-            ₹{todaysRevenue.toLocaleString('en-IN')}
-          </div>
-          <div className="text-[11px] text-blue-200 mt-0.5">
-            {todaysBills.length} Bills inru pottadhu
-          </div>
-        </div>
+        {/* Top Header */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3 }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SalesIcon color="primary" sx={{ fontSize: 28 }} />
+              <Typography variant="h1" sx={{ color: '#0f172a', m: 0 }}>
+                Kadai Virpanai & Sales History (Shop View)
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              Moththa virpanai, Cash/UPI vasool, kadan bill-gal matrum receipt vivaram
+            </Typography>
+          </Box>
+        </Box>
 
-        {/* Total Settled Revenue */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-            <span>Panam Settled</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-600 mt-2">
-            ₹{settledRevenue.toLocaleString('en-IN')}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            Cash + UPI Collections
-          </div>
-        </div>
+        {/* KPI Stats Grid */}
+        <Grid container spacing={2.5} sx={{ mb: 3 }}>
+          
+          {/* Today's Sales */}
+          <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', borderRadius: 4, boxShadow: '0 8px 20px rgba(37, 99, 235, 0.25)' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.9 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Inraiya Virpanai
+                  </Typography>
+                  <TrendingUpIcon sx={{ fontSize: 20, color: '#fcd34d' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#ffffff' }}>
+                  ₹{todaysRevenue.toLocaleString('en-IN')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#bfdbfe', display: 'block', mt: 0.5 }}>
+                  {todaysBills.length} Bills inru pottadhu
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Total Credit Balance Pending */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-            <span>Kadan Baaki</span>
-            <AlertCircle className="w-4 h-4 text-rose-500" />
-          </div>
-          <div className="text-xl sm:text-2xl font-black text-rose-600 mt-2">
-            ₹{totalCreditOwed.toLocaleString('en-IN')}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
-            Customers tara vendiya baaki
-          </div>
-        </div>
+          {/* Total Settled Revenue */}
+          <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Panam Settled
+                  </Typography>
+                  <CheckIcon sx={{ fontSize: 20, color: '#10b981' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#059669' }}>
+                  ₹{settledRevenue.toLocaleString('en-IN')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                  Cash + UPI Collections
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Cash vs UPI split */}
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-            <span>Vasool Mode Split</span>
-            <Banknote className="w-4 h-4 text-blue-500" />
-          </div>
-          <div className="text-xs sm:text-sm font-bold text-slate-800 mt-2 flex flex-col gap-0.5">
-            <span className="text-emerald-700">💵 Cash: ₹{cashRevenue.toLocaleString('en-IN')}</span>
-            <span className="text-blue-700">📱 UPI: ₹{upiRevenue.toLocaleString('en-IN')}</span>
-          </div>
-        </div>
+          {/* Outstanding Credit */}
+          <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Kadan Baaki
+                  </Typography>
+                  <WarningIcon sx={{ fontSize: 20, color: '#ef4444' }} />
+                </Box>
+                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#dc2626' }}>
+                  ₹{totalCreditOwed.toLocaleString('en-IN')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                  Customers tara vendiya baaki
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
 
-      </div>
+          {/* Cash vs UPI split */}
+          <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Vasool Mode Split
+                  </Typography>
+                  <CashIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                </Box>
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#047857' }}>
+                    💵 Cash: ₹{cashRevenue.toLocaleString('en-IN')}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#1d4ed8' }}>
+                    📱 UPI: ₹{upiRevenue.toLocaleString('en-IN')}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-3 border border-slate-200 shadow-2xs mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
+        </Grid>
+
+        {/* Filter and Search Bar */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mb: 3,
+            borderRadius: 3,
+            bgcolor: '#ffffff',
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2
+          }}
+        >
+          <TextField
+            placeholder="Bill No. or Customer name search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Bill No. or Customer name..."
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            size="small"
+            sx={{ width: { xs: '100%', sm: 320 } }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                </InputAdornment>
+              )
+            }}
           />
-        </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-          {/* Date Filter */}
-          <button
-            onClick={() => setDateFilter(dateFilter === 'TODAY' ? 'ALL' : 'TODAY')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
-              dateFilter === 'TODAY'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            <Calendar className="w-3 h-3" />
-            <span>Inru Mattum (Today)</span>
-          </button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' }, overflowX: 'auto' }}>
+            <Button
+              variant={dateFilter === 'TODAY' ? 'contained' : 'outlined'}
+              size="small"
+              startIcon={<CalendarIcon />}
+              onClick={() => setDateFilter(dateFilter === 'TODAY' ? 'ALL' : 'TODAY')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              Inru Mattum (Today)
+            </Button>
+            <Button
+              variant={filterMode === 'ALL' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setFilterMode('ALL')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap', bgcolor: filterMode === 'ALL' ? '#0f172a' : 'transparent', color: filterMode === 'ALL' ? '#fff' : '#475569', borderColor: '#cbd5e1' }}
+            >
+              Ellam
+            </Button>
+            <Button
+              variant={filterMode === 'Cash' ? 'contained' : 'outlined'}
+              color="success"
+              size="small"
+              onClick={() => setFilterMode('Cash')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              Cash
+            </Button>
+            <Button
+              variant={filterMode === 'UPI' ? 'contained' : 'outlined'}
+              color="primary"
+              size="small"
+              onClick={() => setFilterMode('UPI')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              UPI
+            </Button>
+            <Button
+              variant={filterMode === 'Credit' ? 'contained' : 'outlined'}
+              color="error"
+              size="small"
+              onClick={() => setFilterMode('Credit')}
+              sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+            >
+              Credit (Kadan)
+            </Button>
+          </Box>
+        </Paper>
 
-          {/* Payment Mode Filters */}
-          <button
-            onClick={() => setFilterMode('ALL')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              filterMode === 'ALL'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Ellam
-          </button>
-          <button
-            onClick={() => setFilterMode('Cash')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              filterMode === 'Cash'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Cash
-          </button>
-          <button
-            onClick={() => setFilterMode('UPI')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              filterMode === 'UPI'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            UPI
-          </button>
-          <button
-            onClick={() => setFilterMode('Credit')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              filterMode === 'Credit'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            Credit (Kadan)
-          </button>
-        </div>
-      </div>
-
-      {/* Bill History List / Table */}
-      {filteredBills.length === 0 ? (
-        <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-slate-300">
-          <Receipt className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-slate-700">Bills Yedhum Illai</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Vera filter choose panni try pannunga.
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
-                <tr>
-                  <th className="py-3 px-3 sm:px-4">Bill No. & Date</th>
-                  <th className="py-3 px-3 sm:px-4">Customer Details</th>
-                  <th className="py-3 px-3 sm:px-4">Items Summary</th>
-                  <th className="py-3 px-3 sm:px-4">Payment Mode</th>
-                  <th className="py-3 px-3 sm:px-4">Status</th>
-                  <th className="py-3 px-3 sm:px-4 text-right">Total Amount</th>
-                  <th className="py-3 px-3 sm:px-4 text-right">Receipt</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredBills.map(bill => {
+        {/* Bill History Table */}
+        {filteredBills.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 6, textAlign: 'center', borderRadius: 4, bgcolor: '#ffffff' }}>
+            <ReceiptIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 1.5 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#334155' }}>
+              Bills Yedhum Illai
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+              Vera filter choose panni try pannunga.
+            </Typography>
+          </Paper>
+        ) : (
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 800 }}>Bill No. & Date</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Customer Details</TableCell>
+                  <TableCell sx={{ fontWeight: 800 }}>Items Summary</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Payment Mode</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 800 }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800 }}>Total Amount</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800 }}>Receipt</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredBills.map((bill) => {
                   const isCredit = bill.paymentMode === 'Credit';
                   const dateStr = new Date(bill.date).toLocaleString('en-IN', {
                     day: '2-digit',
@@ -252,87 +307,91 @@ export default function SalesHistoryView() {
                   });
 
                   return (
-                    <tr key={bill.id} className="hover:bg-slate-50/80 transition">
+                    <TableRow key={bill.id} hover>
                       
                       {/* Bill No. & Date */}
-                      <td className="py-3 px-3 sm:px-4">
-                        <div className="font-bold text-slate-900">{bill.id}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">{dateStr}</div>
-                      </td>
+                      <TableCell>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                          {bill.id}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {dateStr}
+                        </Typography>
+                      </TableCell>
 
                       {/* Customer Details */}
-                      <td className="py-3 px-3 sm:px-4">
-                        <div className="font-bold text-slate-800">{bill.customerName}</div>
-                        <div className="text-[10px] text-slate-400">{bill.customerPhone}</div>
-                      </td>
+                      <TableCell>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1e293b' }}>
+                          {bill.customerName}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {bill.customerPhone}
+                        </Typography>
+                      </TableCell>
 
                       {/* Items */}
-                      <td className="py-3 px-3 sm:px-4 max-w-xs">
-                        <div className="text-xs text-slate-700 font-medium truncate">
+                      <TableCell sx={{ maxWidth: 220 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem', color: '#334155', noWrap: true }}>
                           {bill.items.map(i => `${i.name} (${i.size}) x${i.qty}`).join(', ')}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           {bill.items.reduce((s, i) => s + i.qty, 0)} items
-                        </div>
-                      </td>
+                        </Typography>
+                      </TableCell>
 
                       {/* Payment Mode */}
-                      <td className="py-3 px-3 sm:px-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold ${
-                          bill.paymentMode === 'Cash'
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                            : bill.paymentMode === 'UPI'
-                            ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200'
-                        }`}>
-                          {bill.paymentMode === 'Cash' && <Banknote className="w-3.5 h-3.5 text-emerald-600" />}
-                          {bill.paymentMode === 'UPI' && <QrCode className="w-3.5 h-3.5 text-blue-600" />}
-                          {bill.paymentMode === 'Credit' && <CreditCard className="w-3.5 h-3.5 text-rose-600" />}
-                          <span>{bill.paymentMode}</span>
-                        </span>
-                      </td>
+                      <TableCell align="center">
+                        <Chip
+                          icon={
+                            bill.paymentMode === 'Cash' ? <CashIcon sx={{ fontSize: '14px !important' }} /> :
+                            bill.paymentMode === 'UPI' ? <UpiIcon sx={{ fontSize: '14px !important' }} /> :
+                            <CreditIcon sx={{ fontSize: '14px !important' }} />
+                          }
+                          label={bill.paymentMode}
+                          color={bill.paymentMode === 'Cash' ? 'success' : bill.paymentMode === 'UPI' ? 'primary' : 'error'}
+                          size="small"
+                          sx={{ fontWeight: 800, height: 22, fontSize: '0.68rem' }}
+                        />
+                      </TableCell>
 
                       {/* Status */}
-                      <td className="py-3 px-3 sm:px-4">
+                      <TableCell align="center">
                         {isCredit ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                            <AlertCircle className="w-3 h-3 text-rose-600" />
-                            <span>Credit (Kadan)</span>
-                          </span>
+                          <Chip label="Credit (Kadan)" color="error" variant="outlined" size="small" sx={{ fontWeight: 800, fontSize: '0.68rem', height: 22 }} />
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Settled</span>
-                          </span>
+                          <Chip label="Settled" color="success" size="small" sx={{ fontWeight: 800, fontSize: '0.68rem', height: 22 }} />
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Total Amount */}
-                      <td className="py-3 px-3 sm:px-4 text-right font-black text-slate-900 text-sm sm:text-base">
-                        ₹{bill.total.toLocaleString('en-IN')}
-                      </td>
+                      <TableCell align="right">
+                        <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1rem' }}>
+                          ₹{(bill.total || bill.amount || 0).toLocaleString('en-IN')}
+                        </Typography>
+                      </TableCell>
 
-                      {/* View Receipt Action */}
-                      <td className="py-3 px-3 sm:px-4 text-right">
-                        <button
+                      {/* Receipt Action */}
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<ViewIcon />}
                           onClick={() => handleViewReceipt(bill)}
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200 transition text-xs font-bold cursor-pointer inline-flex items-center gap-1"
-                          title="View Bill Receipt"
+                          sx={{ borderRadius: 2, fontWeight: 700, fontSize: '0.72rem', py: 0.4 }}
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Receipt</span>
-                        </button>
-                      </td>
+                          Receipt
+                        </Button>
+                      </TableCell>
 
-                    </tr>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
-    </div>
+      </Container>
+    </Box>
   );
 }
