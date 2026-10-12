@@ -214,8 +214,16 @@ export default function CategoryProductsPage({ categoryId, onBackToCategories, o
 
   return (
     <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
-      <Container maxWidth="lg">
-        
+        <Container
+  maxWidth={false}
+  sx={{
+    width: '100%',
+    maxWidth: '2400px',
+    mx: 'auto',
+    px: { xs: 1.5, sm: 2.5, lg: 4 },
+    boxSizing: 'border-box',
+  }}
+>        
         {/* Navigation & Controls Top Bar */}
         <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 3 }}>
           <Button

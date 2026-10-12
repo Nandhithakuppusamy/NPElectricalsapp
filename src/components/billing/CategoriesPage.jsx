@@ -200,8 +200,16 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
 
   return (
     <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
-      <Container maxWidth="lg">
-        
+        <Container
+  maxWidth={false}
+  sx={{
+    width: '100%',
+    maxWidth: '2400px',
+    mx: 'auto',
+    px: { xs: 1.5, sm: 2.5, lg: 4 },
+    boxSizing: 'border-box',
+  }}
+>        
         {/* Top Header Banner */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 4 }}>
           <Box>
@@ -249,7 +257,7 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
         </Box>
 
         {/* Categories Grid - Material UI Cards with CardMedia Image at Top */}
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {categories.map((cat, index) => {
             const count = products.filter(p => p.category === cat.id || p.categoryId === cat.id).length;
             const displayImg = cat.imageUrl || getCategoryDefaultImage(cat.id);
@@ -261,7 +269,7 @@ export default function CategoriesPage({ onSelectCategory, onOpenCheckout }) {
                 sm={6} 
                 md={4} 
                 key={cat.id}
-                size={{ xs: 12, sm: 6, md: 4 }}
+                size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}
               >
                 <Card
                   onClick={() => onSelectCategory(cat.id)}

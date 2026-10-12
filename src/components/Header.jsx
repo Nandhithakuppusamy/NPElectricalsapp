@@ -119,10 +119,28 @@ export default function Header() {
           zIndex: (theme) => theme.zIndex.drawer + 1
         }}
       >
-        <Toolbar sx={{ px: { xs: 1.5, sm: 3 }, py: 0.8, display: 'flex', justifyContent: 'space-between', minHeight: { xs: 60, sm: 68 } }}>
-          
+<Toolbar
+  sx={{
+    px: { xs: 1, sm: 2, md: 3 },
+    py: { xs: 1, sm: 0.8 },
+    display: 'flex',
+    flexWrap: { xs: 'wrap', lg: 'nowrap' },
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: { xs: 1, sm: 1.5 },
+    minHeight: { xs: 60, sm: 68 },
+  }}
+>          
           {/* Left: Drawer Toggle Button & Shop Brand */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+          <Box
+  sx={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: { xs: 0.5, sm: 2 },
+    minWidth: 0,
+    flex: '1 1 auto',
+  }}
+>
             <IconButton 
               color="inherit" 
               edge="start" 
@@ -157,7 +175,7 @@ export default function Header() {
                 <ZapIcon sx={{ fontSize: { xs: 24, sm: 28 } }} />
               </Box>
 
-              <Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="h6" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#ffffff', lineHeight: 1.1, fontSize: { xs: '1.05rem', sm: '1.25rem' } }}>
                     NP Electricals
@@ -201,8 +219,17 @@ export default function Header() {
           </Box>
 
           {/* Right: Summary Badges & Owner Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.8, sm: 1.5 } }}>
-            
+<Box
+  sx={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: { xs: 'flex-end', lg: 'flex-start' },
+    flexWrap: 'wrap',
+    gap: { xs: 0.5, sm: 1 },
+    minWidth: 0,
+    flexShrink: 0,
+  }}
+>            
             {/* Low stock warning chip */}
             {lowStockProducts.length > 0 && (
               <Button

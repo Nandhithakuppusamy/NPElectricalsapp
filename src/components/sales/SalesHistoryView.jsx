@@ -90,16 +90,32 @@ export default function SalesHistoryView() {
 
   return (
     <Box sx={{ py: { xs: 2.5, sm: 4 }, pb: { xs: 16, sm: 12 }, minHeight: '80vh' }}>
-      <Container maxWidth="lg">
-        
+<Container
+  maxWidth={false}
+  sx={{
+    width: '100%',
+    maxWidth: '2400px',
+    mx: 'auto',
+    px: { xs: 1, sm: 2, md: 3 },
+    boxSizing: 'border-box',
+  }}
+>        
         {/* Top Header */}
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3 }}>
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <SalesIcon color="primary" sx={{ fontSize: 28 }} />
-              <Typography variant="h1" sx={{ color: '#0f172a', m: 0 }}>
-                Kadai Virpanai & Sales History (Shop View)
-              </Typography>
+             <Typography
+  sx={{
+    color: '#0f172a',
+    m: 0,
+    fontSize: { xs: '1.25rem', md: '1.8rem', lg: '2rem' },
+    fontWeight: 800,
+    lineHeight: 1.3,
+  }}
+>
+  Kadai Virpanai & Sales History (Shop View)
+</Typography>
             </Box>
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
               Moththa virpanai, Cash/UPI vasool, kadan bill-gal matrum receipt vivaram
@@ -113,14 +129,21 @@ export default function SalesHistoryView() {
           {/* Today's Sales */}
           <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', borderRadius: 4, boxShadow: '0 8px 20px rgba(37, 99, 235, 0.25)' }}>
-              <CardContent sx={{ p: 2.5 }}>
+<CardContent sx={{ p: { xs: 2, md: 2.5, lg: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.9 }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Inraiya Virpanai
                   </Typography>
                   <TrendingUpIcon sx={{ fontSize: 20, color: '#fcd34d' }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#ffffff' }}>
+<Typography
+  sx={{
+    fontWeight: 900,
+    mt: 1,
+    color: '#059669',
+    fontSize: { xs: '1.25rem', md: '1.6rem', lg: '1.8rem' },
+  }}
+>
                   ₹{todaysRevenue.toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#bfdbfe', display: 'block', mt: 0.5 }}>
@@ -133,14 +156,21 @@ export default function SalesHistoryView() {
           {/* Total Settled Revenue */}
           <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-              <CardContent sx={{ p: 2.5 }}>
+<CardContent sx={{ p: { xs: 2, md: 2.5, lg: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Panam Settled
                   </Typography>
                   <CheckIcon sx={{ fontSize: 20, color: '#10b981' }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#059669' }}>
+<Typography
+  sx={{
+    fontWeight: 900,
+    mt: 1,
+    color: '#059669',
+    fontSize: { xs: '1.25rem', md: '1.6rem', lg: '1.8rem' },
+  }}
+>
                   ₹{settledRevenue.toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
@@ -153,14 +183,21 @@ export default function SalesHistoryView() {
           {/* Outstanding Credit */}
           <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: { xs: 2, md: 2.5, lg: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Kadan Baaki
                   </Typography>
                   <WarningIcon sx={{ fontSize: 20, color: '#ef4444' }} />
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 900, mt: 1, color: '#dc2626' }}>
+                <Typography
+                  sx={{
+                    fontWeight: 900,
+                    mt: 1,
+                    color: '#dc2626',
+                    fontSize: { xs: '1.25rem', md: '1.6rem', lg: '1.8rem' },
+                  }}
+                >
                   ₹{totalCreditOwed.toLocaleString('en-IN')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
@@ -173,7 +210,7 @@ export default function SalesHistoryView() {
           {/* Cash vs UPI split */}
           <Grid item xs={12} sm={6} md={3} size={{ xs: 12, sm: 6, md: 3 }}>
             <Card sx={{ borderRadius: 4, border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
-              <CardContent sx={{ p: 2.5 }}>
+              <CardContent sx={{ p: { xs: 2, md: 2.5, lg: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Vasool Mode Split
@@ -303,7 +340,13 @@ export default function SalesHistoryView() {
                       {/* Top: Bill ID + Payment Mode Chip + Status */}
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Box>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                           <Typography
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.85rem', md: '0.95rem', lg: '1rem' },
+    color: '#0f172a',
+  }}
+>
                             {bill.id}
                           </Typography>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -369,17 +412,91 @@ export default function SalesHistoryView() {
             </Box>
 
             {/* DESKTOP/TABLET: Bill History Table */}
-            <TableContainer component={Paper} variant="outlined" sx={{ display: { xs: 'none', sm: 'block' }, borderRadius: 4, bgcolor: '#ffffff', overflow: 'hidden' }}>
-              <Table>
+            <TableContainer
+  component={Paper}
+  variant="outlined"
+  sx={{
+    display: { xs: 'none', sm: 'block' },
+    width: '100%',
+    borderRadius: 4,
+    bgcolor: '#ffffff',
+    overflowX: 'auto',
+  }}
+>
+              <Table
+  sx={{
+    width: '100%',
+    '& th, & td': {
+      px: { xs: 1, md: 2 },
+      py: { xs: 1.5, md: 2 },
+    },
+  }}
+>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 800 }}>Bill No. & Date</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Customer Details</TableCell>
-                  <TableCell sx={{ fontWeight: 800 }}>Items Summary</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Payment Mode</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 800 }}>Status</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800 }}>Total Amount</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 800 }}>Receipt</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+  Bill No. & Date
+</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+  Customer Details
+</TableCell>           
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+ Items Summary
+</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+ Payment Mode
+</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+ Status
+</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+  Total Amount
+</TableCell>
+<TableCell
+  sx={{
+    fontWeight: 800,
+    fontSize: { xs: '0.8rem', md: '0.9rem', lg: '1rem' },
+    whiteSpace: 'nowrap',
+  }}
+>
+Receipt
+</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -401,14 +518,17 @@ export default function SalesHistoryView() {
                         <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
                           {bill.id}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        <Typography variant="caption" sx={{
+  color: 'text.secondary',
+  fontSize: { xs: '0.7rem', md: '0.8rem', lg: '0.85rem' },
+}}>
                           {dateStr}
                         </Typography>
                       </TableCell>
 
                       {/* Customer Details */}
                       <TableCell>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1e293b' }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
                           {bill.customerName}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -418,7 +538,15 @@ export default function SalesHistoryView() {
 
                       {/* Items */}
                       <TableCell sx={{ maxWidth: 220 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem', color: '#334155', noWrap: true }}>
+<Typography
+  sx={{
+    fontWeight: 500,
+    fontSize: { xs: '0.85rem', md: '0.95rem', lg: '1rem' },
+    color: '#334155',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+  }}
+>
                           {bill.items.map(i => `${i.name} (${i.size}) x${i.qty}`).join(', ')}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>

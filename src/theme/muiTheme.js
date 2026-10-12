@@ -36,55 +36,65 @@ export const muiTheme = createTheme({
     }
   },
   typography: {
-    fontFamily: [
-      'Roboto',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'sans-serif'
-    ].join(','),
-    h1: {
-      fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
-      fontWeight: 900,
-      letterSpacing: '-0.02em',
-      lineHeight: 1.2
-    },
-    h2: {
-      fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
-      fontWeight: 800,
-      letterSpacing: '-0.01em',
-      lineHeight: 1.25
-    },
-    h3: {
-      fontSize: 'clamp(1.1rem, 2vw, 1.4rem)',
-      fontWeight: 700,
-      lineHeight: 1.3
-    },
-    h4: {
-      fontSize: 'clamp(1rem, 1.5vw, 1.2rem)',
-      fontWeight: 700,
-      lineHeight: 1.35
-    },
-    h5: {
-      fontSize: '1rem',
-      fontWeight: 700
-    },
-    h6: {
-      fontSize: '0.875rem',
-      fontWeight: 700
-    },
-    body1: {
-      fontSize: '0.9375rem', // 15px
-      lineHeight: 1.5
-    },
-    body2: {
-      fontSize: '0.8125rem', // 13px
-      lineHeight: 1.45
-    },
-    caption: {
-      fontSize: '0.75rem', // 12px
-      lineHeight: 1.4
-    },
+  fontFamily: [
+    'Roboto',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    'sans-serif',
+  ].join(','),
+
+  htmlFontSize: 16,
+
+  h1: {
+    fontSize: 'clamp(1.6rem, 2vw, 2.4rem)',
+    fontWeight: 900,
+    letterSpacing: '-0.02em',
+    lineHeight: 1.3,
+  },
+
+  h2: {
+    fontSize: 'clamp(1.4rem, 1.8vw, 2rem)',
+    fontWeight: 800,
+    lineHeight: 1.3,
+  },
+
+  h3: {
+    fontSize: 'clamp(1.25rem, 1.5vw, 1.7rem)',
+    fontWeight: 700,
+    lineHeight: 1.4,
+  },
+
+  h4: {
+    fontSize: 'clamp(1.3rem, 1.5vw, 1.8rem)',
+    fontWeight: 800,
+    lineHeight: 1.4,
+  },
+
+  h5: {
+    fontSize: '1.2rem',
+    fontWeight: 700,
+  },
+
+  h6: {
+    fontSize: '1.05rem',
+    fontWeight: 700,
+  },
+
+  body1: {
+    fontSize: '1rem',
+    lineHeight: 1.6,
+  },
+
+  body2: {
+    fontSize: '0.95rem',
+    lineHeight: 1.6,
+  },
+
+  caption: {
+    fontSize: '0.85rem',
+    lineHeight: 1.5,
+  },
     button: {
       textTransform: 'none',
       fontWeight: 700,
@@ -124,22 +134,23 @@ export const muiTheme = createTheme({
         }
       }
     },
-    MuiTableCell: {
-      styleOverrides: {
-        root: {
-          fontSize: '0.8125rem',
-          padding: '12px 16px'
-        },
-        head: {
-          fontWeight: 700,
-          backgroundColor: '#f8fafc',
-          color: '#475569',
-          textTransform: 'uppercase',
-          fontSize: '0.72rem',
-          letterSpacing: '0.05em'
-        }
-      }
+   MuiTableCell: {
+  styleOverrides: {
+    root: {
+      fontSize: '0.95rem',
+      padding: '16px 18px',
     },
+    head: {
+      fontWeight: 800,
+      backgroundColor: '#f8fafc',
+      color: '#475569',
+      textTransform: 'uppercase',
+      fontSize: '0.85rem',
+      letterSpacing: '0.04em',
+      whiteSpace: 'nowrap',
+    },
+  },
+},
     MuiAlert: {
       styleOverrides: {
         root: {

@@ -91,7 +91,7 @@ export default function Navigation() {
           display: { xs: 'none', sm: 'block' }
         }}
       >
-        <Box sx={{ maxWidth: 1200, mx: 'auto', px: { sm: 3 } }}>
+        <Box sx={{ maxWidth: 1400, mx: 'auto', px: { sm: 3 } }}>
           <Tabs
             value={currentTab}
             onChange={(e, val) => handleTabChange(val)}
